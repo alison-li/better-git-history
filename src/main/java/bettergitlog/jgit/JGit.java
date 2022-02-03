@@ -14,6 +14,7 @@ import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.jgit.treewalk.TreeWalk;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.*;
 
@@ -67,14 +68,27 @@ public class JGit {
         return commitMap;
     }
 
-    public void getFileFromCommit(RevCommit commit, String filePath) {
-        try (TreeWalk treeWalk = TreeWalk.forPath(repository, filePath, commit.getTree())) {
-            ObjectId objectId = treeWalk.getObjectId(0);
-            ObjectLoader loader = repository.open(objectId);
-            loader.copyTo(System.out); // TODO: What to store this in and return?
-        } catch (IOException e) {
-            System.out.println("Error while looking for file in commit");
+    /**
+     * Get the given filepath in the commit.
+     * @param commit The commit to retrieve the file from.
+     * @param filePath The file to retrieve.
+     * @param newFilePath The file path of the newly created file that will store the contents of the retrieved file.
+     * @return The retrieved file in the commit.
+     */
+    public File getFileFromCommit(RevCommit commit, String filePath, String newFilePath) throws IOException {
+        File file = new File(newFilePath);
+        if (file.createNewFile()) {
+            try (TreeWalk treeWalk = TreeWalk.forPath(repository, filePath, commit.getTree())) {
+                ObjectId objectId = treeWalk.getObjectId(0);
+                ObjectLoader loader = repository.open(objectId);
+                loader.copyTo(new FileOutputStream(file, false));
+            } catch (IOException e) {
+                System.out.println("Error while looking for file in commit");
+            }
+        } else {
+            throw new IllegalArgumentException("New file path already exists. Please try another file path to store the result in.");
         }
+        return file;
     }
 
     /**
