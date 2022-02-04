@@ -18,6 +18,9 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.*;
 
+/**
+ * For interfacing with JGit.
+ */
 public class JGit {
     private final Repository repository;
     private final Git git;
