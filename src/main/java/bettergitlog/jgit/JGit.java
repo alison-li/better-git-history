@@ -106,13 +106,13 @@ public class JGit {
                 .setRevFilter(RevFilter.NO_MERGES)
                 .call();
         for (RevCommit commit : allCommitsLater) {
-            TreeWalk tw = new TreeWalk(repository);
-            tw.addTree(commit.getTree());
-            tw.addTree(startCommit.getTree());
-            tw.setRecursive(true);
-            RenameDetector rd = new RenameDetector(repository);
-            rd.addAll(DiffEntry.scan(tw));
-            List<DiffEntry> files = rd.compute();
+            TreeWalk treeWalk = new TreeWalk(repository);
+            treeWalk.addTree(commit.getTree());
+            treeWalk.addTree(startCommit.getTree());
+            treeWalk.setRecursive(true);
+            RenameDetector renameDetector = new RenameDetector(repository);
+            renameDetector.addAll(DiffEntry.scan(treeWalk));
+            List<DiffEntry> files = renameDetector.compute();
             for (DiffEntry diffEntry : files) {
                 if ((diffEntry.getChangeType() == DiffEntry.ChangeType.RENAME ||
                         diffEntry.getChangeType() == DiffEntry.ChangeType.COPY) &&
