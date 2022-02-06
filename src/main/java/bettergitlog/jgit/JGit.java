@@ -43,6 +43,7 @@ public class JGit {
      * Retrieve the full Git history for a given file, including file renames/old paths.
      * @param filePath The file to get the full history for.
      * @return A map with the commit mapped to the file path in that commit.
+     *          The entries in the map are ordered from most recent commit to oldest commit.
      */
     public Map<RevCommit, String> getFileLog(String filePath) {
         Map<RevCommit, String> commitMap = new LinkedHashMap<>();
