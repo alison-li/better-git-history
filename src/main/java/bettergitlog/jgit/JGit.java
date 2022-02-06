@@ -45,7 +45,7 @@ public class JGit {
      * @return A map with the commit mapped to the file path in that commit.
      *          The entries in the map are ordered from most recent commit to oldest commit.
      */
-    public Map<RevCommit, String> getFileLog(String filePath) {
+    public Map<RevCommit, String> getFileCommitHistory(String filePath) {
         Map<RevCommit, String> commitMap = new LinkedHashMap<>();
         String updatedPath = filePath;
         try {
@@ -70,6 +70,25 @@ public class JGit {
             System.out.println("Error while collecting fileNames.");
         }
         return commitMap;
+    }
+
+    /**
+     * Takes a file's commit history and generates what the file looked like for each commit.
+     * The resulting files are in the "out" directory with the name being "ver#.java" where # is the version of the
+     * file and 1 represents the oldest version of the file (i.e. first commit in the file's commit history).
+     * @param commitMap A file's commit history.
+     * @throws IOException From calling a class method for writing files.
+     */
+    public void generateFilesFromFileCommitHistory(Map<RevCommit, String> commitMap) throws IOException {
+        // Counter starts from the size of the commit history because commitMap is ordered from most recent commit
+        // to oldest.
+        int count = commitMap.size();
+        for (Map.Entry<RevCommit, String> entry : commitMap.entrySet()) {
+            RevCommit commit = entry.getKey();
+            String filePath = entry.getValue();
+            this.getFileFromCommit(commit, filePath, String.format("out/ver%d.java", count));
+            count--;
+        }
     }
 
     /**
