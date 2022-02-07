@@ -75,19 +75,19 @@ public class JGit {
     /**
      * Takes a file's commit history and generates what the file looked like for each commit.
      * The resulting files are in the "out" directory with the name being "ver#.java" where # is the version of the
-     * file and 1 represents the oldest version of the file (i.e. first commit in the file's commit history).
+     * file and 0 represents the most recent version of the file (i.e. most recent commit in the file's commit history).
      * @param commitMap A file's commit history.
      * @throws IOException From calling a class method for writing files.
      */
     public void generateFilesFromFileCommitHistory(Map<RevCommit, String> commitMap) throws IOException {
         // Counter starts from the size of the commit history because commitMap is ordered from most recent commit
         // to oldest.
-        int count = commitMap.size() - 1;
+        int count = 0;
         for (Map.Entry<RevCommit, String> entry : commitMap.entrySet()) {
             RevCommit commit = entry.getKey();
             String filePath = entry.getValue();
             this.getFileFromCommit(commit, filePath, String.format("out/ver%d.java", count));
-            count--;
+            count++;
         }
     }
 
