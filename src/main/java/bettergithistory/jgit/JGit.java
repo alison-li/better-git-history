@@ -1,4 +1,4 @@
-package bettergitlog.jgit;
+package bettergithistory.jgit;
 
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;

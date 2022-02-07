@@ -1,4 +1,4 @@
-package bettergitlog.distiller;
+package bettergithistory.distiller;
 
 import ch.uzh.ifi.seal.changedistiller.ChangeDistiller;
 import ch.uzh.ifi.seal.changedistiller.distilling.FileDistiller;

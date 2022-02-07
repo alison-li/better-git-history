@@ -7,8 +7,9 @@
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <module name="commit-duster" />
+        <module name="bettergithistory" />
+        <module name="better-git-history" />
         <module name="duster" />
-        <module name="bettergitlog" />
       </profile>
     </annotationProcessing>
   </component>
