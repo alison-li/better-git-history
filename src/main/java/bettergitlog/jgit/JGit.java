@@ -82,7 +82,7 @@ public class JGit {
     public void generateFilesFromFileCommitHistory(Map<RevCommit, String> commitMap) throws IOException {
         // Counter starts from the size of the commit history because commitMap is ordered from most recent commit
         // to oldest.
-        int count = commitMap.size();
+        int count = commitMap.size() - 1;
         for (Map.Entry<RevCommit, String> entry : commitMap.entrySet()) {
             RevCommit commit = entry.getKey();
             String filePath = entry.getValue();
