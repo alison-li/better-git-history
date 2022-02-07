@@ -1,34 +1,40 @@
 package bettergithistory;
 
-import bettergithistory.distiller.Distiller;
 import bettergithistory.jgit.JGit;
+import bettergithistory.util.CommitHistoryUtil;
 import ch.uzh.ifi.seal.changedistiller.model.entities.SourceCodeChange;
 import org.eclipse.jgit.revwalk.RevCommit;
 
-import java.io.File;
 import java.io.IOException;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
 
 public class Driver {
     public static void main(String[] args) throws IOException {
+        // Clean the out directory used for handling generated files
+        //FileUtil.cleanOutDirectory();
+
+        // Initialize JGit object for working for repo
         JGit jgit = new JGit("../kafka");
         String fileName = "streams/src/main/java/org/apache/kafka/streams/KafkaStreams.java";
+
+        // Get file's commit history
         Map<RevCommit, String> commitMap = jgit.getFileCommitHistory(fileName);
+        System.out.println("ORIGINAL HISTORY");
+        CommitHistoryUtil.printCommitHistory(commitMap);
 
-        // GENERATE PROGRAM FILES
-//        FileUtils.cleanDirectory(new File("out"));
-//        jgit.generateFilesFromFileCommitHistory(commitMap);
+        System.out.println("\n");
 
-        // Pairwise extract changes from each file.
-        List<List<SourceCodeChange>> allSourceCodeChanges = new ArrayList<>();
-        for (int i = 0; i < commitMap.size() - 1; i++) {
-            File left = new File(String.format("out/ver%d.java", i));
-            File right = new File(String.format("out/ver%d.java", i + 1));
-            allSourceCodeChanges.add(
-                    Distiller.extractSourceCodeChanges(left, right)
-            );
-        }
+        // Initialize BetterGitHistory object for getting file's filtered commit history
+        BetterGitHistory betterGitHistory = new BetterGitHistory(jgit, commitMap);
+        Map<RevCommit, String> filteredCommitMap = betterGitHistory.getFilteredCommitHistory();
+        System.out.println("FILTERED HISTORY");
+        CommitHistoryUtil.printCommitHistory(filteredCommitMap);
 
-        // TODO: Want to make some observations about ChangeDistiller and what it does. Noticed the changelist returned was empty in one case. Compare the commitMap after using ChangeDistiller to filter.
+        System.out.println("\n");
+
+        // Drill down to the changes found by ChangeDistiller
+        List<List<SourceCodeChange>> allChanges = betterGitHistory.getAllSourceCodeChanges();
+        // TODO: Write a method in the Distiller class for printing the changes nicely.
     }
 }
