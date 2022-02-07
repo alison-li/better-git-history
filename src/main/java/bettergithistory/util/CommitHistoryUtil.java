@@ -11,8 +11,7 @@ public class CommitHistoryUtil {
     public static void printCommitHistory(Map<RevCommit, String> commitMap) {
         for (Map.Entry<RevCommit, String> entry : commitMap.entrySet()) {
             RevCommit commit = entry.getKey();
-            String filePath = entry.getValue();
-            System.out.println(commit.getShortMessage());
+            System.out.println(commit.getAuthorIdent().getName() + " | " + commit.getShortMessage());
         }
     }
 }
