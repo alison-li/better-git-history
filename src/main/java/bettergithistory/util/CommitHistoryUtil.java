@@ -11,7 +11,9 @@ public class CommitHistoryUtil {
     public static void printCommitHistory(Map<RevCommit, String> commitMap) {
         for (Map.Entry<RevCommit, String> entry : commitMap.entrySet()) {
             RevCommit commit = entry.getKey();
-            System.out.println(commit.getAuthorIdent().getName() + " | " + commit.getShortMessage());
+            String formatted = String.format("%-25s %-10s", commit.getAuthorIdent().getName(),
+                    commit.getShortMessage());
+            System.out.println(formatted);
         }
     }
 }
