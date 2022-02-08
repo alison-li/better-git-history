@@ -23,4 +23,17 @@ public class Distiller {
         distiller.extractClassifiedSourceCodeChanges(left, right);
         return distiller.getSourceCodeChanges();
     }
+
+    /**
+     * Print the details of each source code change in a change list.
+     * @param changes The list of source code changes to print details for.
+     */
+    public static void printSourceCodeChanges(List<SourceCodeChange> changes) {
+        for (SourceCodeChange change : changes) {
+            System.out.println("Change Type: " + change.getChangeType());
+            System.out.println("Root Entity: " + change.getRootEntity());
+            System.out.println("Changed Entity: " + change.getChangedEntity());
+            System.out.println("Parent Entity: " + change.getParentEntity());
+        }
+    }
 }
