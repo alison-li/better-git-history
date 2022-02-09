@@ -2,21 +2,20 @@ package bettergithistory;
 
 import bettergithistory.jgit.JGit;
 import bettergithistory.util.CommitHistoryUtil;
-import ch.uzh.ifi.seal.changedistiller.model.entities.SourceCodeChange;
+import bettergithistory.util.FileUtil;
 import org.eclipse.jgit.revwalk.RevCommit;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.Map;
 
 public class Driver {
     public static void main(String[] args) throws IOException {
         // Clean the temp directory used for handling generated files
-        //FileUtil.cleanTempDirectory();
+        FileUtil.cleanTempDirectory();
 
         // Initialize JGit object for working for repo
         JGit jgit = new JGit("../kafka");
-        String fileName = "streams/src/main/java/org/apache/kafka/streams/KafkaStreams.java";
+        String fileName = "streams/src/main/java/org/apache/kafka/streams/Topology.java";
 
         // Get file's commit history
         Map<RevCommit, String> commitMap = jgit.getFileCommitHistory(fileName);
@@ -34,6 +33,6 @@ public class Driver {
         System.out.println("\n");
 
         // Drill down to the changes found by ChangeDistiller
-        List<List<SourceCodeChange>> allChanges = betterGitHistory.getAllChangeDistillerSourceCodeChanges();
+        // List<List<SourceCodeChange>> allChanges = betterGitHistory.getAllChangeDistillerSourceCodeChanges();
     }
 }
