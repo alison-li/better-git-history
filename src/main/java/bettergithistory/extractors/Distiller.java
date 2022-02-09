@@ -1,4 +1,4 @@
-package bettergithistory.distiller;
+package bettergithistory.extractors;
 
 import ch.uzh.ifi.seal.changedistiller.ChangeDistiller;
 import ch.uzh.ifi.seal.changedistiller.distilling.FileDistiller;
