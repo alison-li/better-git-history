@@ -30,7 +30,7 @@ public class BetterGitHistory {
     public BetterGitHistory(JGit jgit, Map<RevCommit, String> commitMap) throws IOException {
         this.jgit = jgit;
         this.commitMap = commitMap;
-        if (FileUtil.isOutDirectoryEmpty()) {
+        if (FileUtil.isTempDirectoryEmpty()) {
             jgit.generateFilesFromFileCommitHistory(this.commitMap);
         }
     }
@@ -47,8 +47,8 @@ public class BetterGitHistory {
         for (int verNum = 0; verNum < this.commitMap.size() - 1; verNum++) {
             int leftVer = verNum;
             int rightVer = verNum + 1;
-            File left = new File(String.format("out/ver%d.java", leftVer));
-            File right = new File(String.format("out/ver%d.java", rightVer));
+            File left = new File(String.format("temp/ver%d.java", leftVer));
+            File right = new File(String.format("temp/ver%d.java", rightVer));
             List<SourceCodeChange> changes = Distiller.extractSourceCodeChanges(left, right);
             if (!changes.isEmpty()) {
                 System.out.printf("HIT VER %d -> VER %d%n", leftVer, rightVer);
@@ -77,8 +77,8 @@ public class BetterGitHistory {
 //        int leftVer = 0;
 //        int rightVer = 1;
 //        while (rightVer < this.commitMap.size()) {
-//            File left = new File(String.format("out/ver%d.java", leftVer));
-//            File right = new File(String.format("out/ver%d.java", rightVer));
+//            File left = new File(String.format("temp/ver%d.java", leftVer));
+//            File right = new File(String.format("temp/ver%d.java", rightVer));
 //            List<SourceCodeChange> changes = Distiller.extractSourceCodeChanges(left, right);
 //            if (!changes.isEmpty()) {
 //                System.out.printf("HIT VER %d -> VER %d%n", leftVer, rightVer);
@@ -106,9 +106,9 @@ public class BetterGitHistory {
         // This will give us a chronological list of source code changes since the commit map
         // is ordered from most recent commit to oldest.
         // We iterate backwards starting from the oldest file version to see the subsequent changes applied.
-        for (int verNum = 0; verNum < this.commitMap.size(); verNum++) {
-            File left = new File(String.format("out/ver%d.java", verNum));
-            File right = new File(String.format("out/ver%d.java", verNum + 1));
+        for (int verNum = 0; verNum < this.commitMap.size() - 1; verNum++) {
+            File left = new File(String.format("temp/ver%d.java", verNum));
+            File right = new File(String.format("temp/ver%d.java", verNum + 1));
             List<SourceCodeChange> changes = Distiller.extractSourceCodeChanges(left, right);
             if (!changes.isEmpty()) {
                 allSourceCodeChanges.add(changes);

@@ -11,8 +11,8 @@ import java.util.Map;
 
 public class Driver {
     public static void main(String[] args) throws IOException {
-        // Clean the out directory used for handling generated files
-        //FileUtil.cleanOutDirectory();
+        // Clean the temp directory used for handling generated files
+        //FileUtil.cleanTempDirectory();
 
         // Initialize JGit object for working for repo
         JGit jgit = new JGit("../kafka");
@@ -27,14 +27,13 @@ public class Driver {
 
         // Initialize BetterGitHistory object for getting file's filtered commit history
         BetterGitHistory betterGitHistory = new BetterGitHistory(jgit, commitMap);
-        Map<RevCommit, String> filteredCommitMap = betterGitHistory.getFilteredCommitHistory();
+        Map<RevCommit, String> filteredCommitMap = betterGitHistory.getChangeDistillerCommitHistory();
         System.out.println("FILTERED HISTORY");
         CommitHistoryUtil.printCommitHistory(filteredCommitMap);
 
         System.out.println("\n");
 
         // Drill down to the changes found by ChangeDistiller
-        List<List<SourceCodeChange>> allChanges = betterGitHistory.getAllSourceCodeChanges();
-        // TODO: Write a method in the Distiller class for printing the changes nicely.
+        List<List<SourceCodeChange>> allChanges = betterGitHistory.getAllChangeDistillerSourceCodeChanges();
     }
 }

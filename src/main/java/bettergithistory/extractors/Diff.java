@@ -22,8 +22,8 @@ public class Diff {
      * @throws IOException
      */
     public static void getDiff(int leftVer, int rightVer) throws IOException {
-        List<String> left = Files.readAllLines(Paths.get(new File(String.format("out/ver%d.java", leftVer)).getPath()));
-        List<String> right = Files.readAllLines(Paths.get(new File(String.format("out/ver%d.java", rightVer)).getPath()));
+        List<String> left = Files.readAllLines(Paths.get(new File(String.format("temp/ver%d.java", leftVer)).getPath()));
+        List<String> right = Files.readAllLines(Paths.get(new File(String.format("temp/ver%d.java", rightVer)).getPath()));
         Patch<String> patch = DiffUtils.diff(left, right);
         for (AbstractDelta<String> delta : patch.getDeltas()) {
             System.out.println(delta);
@@ -34,8 +34,8 @@ public class Diff {
      * Get the diff in a unified file format and apply it as the patch to a given text.
      */
     public static void applyPatch(int leftVer, int rightVer) throws PatchFailedException, IOException {
-        List<String> original = Files.readAllLines(Paths.get(new File(String.format("out/ver%d.java", leftVer)).getPath()));
-        List<String> patched = Files.readAllLines(Paths.get(new File(String.format("out/ver%d.java", rightVer)).getPath()));
+        List<String> original = Files.readAllLines(Paths.get(new File(String.format("temp/ver%d.java", leftVer)).getPath()));
+        List<String> patched = Files.readAllLines(Paths.get(new File(String.format("temp/ver%d.java", rightVer)).getPath()));
         // At first, parse the unified diff file and get the patch
         Patch<String> patch = UnifiedDiffUtils.parseUnifiedDiff(patched);
         // Then apply the computed patch to the given text
