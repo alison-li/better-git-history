@@ -1,8 +1,10 @@
 package bettergithistory.extractors;
 
 import com.github.difflib.DiffUtils;
+import com.github.difflib.UnifiedDiffUtils;
 import com.github.difflib.patch.AbstractDelta;
 import com.github.difflib.patch.Patch;
+import com.github.difflib.patch.PatchFailedException;
 
 import java.io.File;
 import java.io.IOException;
@@ -12,7 +14,7 @@ import java.util.List;
 
 /**
  * For interfacing with java-diff-utils
- * {@link https://github.com/java-diff-utils/java-diff-utils}
+ * Source: https://github.com/java-diff-utils/java-diff-utils
  */
 public class Diff {
     /**
@@ -26,5 +28,18 @@ public class Diff {
         for (AbstractDelta<String> delta : patch.getDeltas()) {
             System.out.println(delta);
         }
+    }
+
+    /**
+     * Get the diff in a unified file format and apply it as the patch to a given text.
+     */
+    public static void applyPatch(int leftVer, int rightVer) throws PatchFailedException, IOException {
+        List<String> original = Files.readAllLines(Paths.get(new File(String.format("out/ver%d.java", leftVer)).getPath()));
+        List<String> patched = Files.readAllLines(Paths.get(new File(String.format("out/ver%d.java", rightVer)).getPath()));
+        // At first, parse the unified diff file and get the patch
+        Patch<String> patch = UnifiedDiffUtils.parseUnifiedDiff(patched);
+        // Then apply the computed patch to the given text
+        List<String> result = DiffUtils.patch(original, patch);
+        System.out.println(result);
     }
 }
