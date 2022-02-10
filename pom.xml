@@ -55,5 +55,12 @@
             <artifactId>github-api</artifactId>
             <version>1.301</version>
         </dependency>
+
+        <dependency>
+            <groupId>net.rcarz</groupId>
+            <artifactId>jira-client</artifactId>
+            <version>0.5</version>
+            <scope>compile</scope>
+        </dependency>
     </dependencies>
 </project>

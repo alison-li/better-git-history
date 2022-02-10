@@ -1,11 +1,14 @@
 package bettergithistory;
 
 import bettergithistory.clients.GitHubRepositoryClient;
+import bettergithistory.clients.JiraProjectClient;
 import bettergithistory.extractors.Distiller;
 import bettergithistory.jgit.JGit;
 import bettergithistory.util.CommitHistoryUtil;
 import bettergithistory.util.FileUtil;
 import ch.uzh.ifi.seal.changedistiller.model.entities.SourceCodeChange;
+import net.rcarz.jiraclient.Issue;
+import net.rcarz.jiraclient.JiraException;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.kohsuke.github.GHPullRequest;
 
@@ -41,8 +44,8 @@ public class BetterGitHistory {
     }
 
     /**
-     * Retrieve a map linking commits (that can be linked) to a corresponding pull request.
-     * Assumes if a commit has a linked pull request, then the commit message will contain "(#<pull-request-id>)".
+     * Retrieve a map linking commits to a corresponding pull request.
+     * Assumes if a commit message refers to a pull request ID, then the commit message will contain "(#<pull-request-id>)".
      * @param gitHubRepoClient The client to use to interact with the GitHub repository.
      * @return A map of commits mapped to corresponding GitHub pull requests.
      * @throws IOException
@@ -53,7 +56,7 @@ public class BetterGitHistory {
         Map<RevCommit, GHPullRequest> commitToPullRequestMap = new LinkedHashMap<>();
         for (RevCommit commit : commits) {
             String message = commit.getShortMessage();
-            Pattern pattern = Pattern.compile("(\\(#\\d*\\))");
+            Pattern pattern = Pattern.compile("(\\(#\\d+\\))");
             Matcher matcher = pattern.matcher(message);
             if (matcher.find()) {
                 String pullRequestId = matcher.group(1);
@@ -61,9 +64,36 @@ public class BetterGitHistory {
                         pullRequestId.substring(2, pullRequestId.length() - 1)
                 );
                 commitToPullRequestMap.put(commit, gitHubRepoClient.getPullRequestById(extractedId));
+            } else {
+                // A commit with no linked PR could still be useful
+                commitToPullRequestMap.put(commit, null);
             }
         }
         return commitToPullRequestMap;
+    }
+
+    /**
+     * Retrieve a map linking commits to a corresponding Jira issue.
+     * @param jiraProjectClient The client to use to interact with the Jira instance.
+     * @return A map of commits mapped to corresponding Jira issues.
+     * @throws JiraException
+     */
+    public Map<RevCommit, Issue> getCommitHistoryWithJiraIssue(JiraProjectClient jiraProjectClient)
+            throws JiraException {
+        List<RevCommit> commits = CommitHistoryUtil.getCommitsOnly(this.commitMap);
+        Map<RevCommit, Issue> commitToJiraIssueMap = new LinkedHashMap<>();
+        for (RevCommit commit : commits) {
+            String message = commit.getShortMessage();
+            Pattern pattern = Pattern.compile("([A-Z]+-\\d+)");
+            Matcher matcher = pattern.matcher(message);
+            if (matcher.find()) {
+                String issueKey = matcher.group(1);
+                commitToJiraIssueMap.put(commit, jiraProjectClient.getIssueById(issueKey));
+            } else {
+                commitToJiraIssueMap.put(commit, null);
+            }
+        }
+        return commitToJiraIssueMap;
     }
 
     /**
