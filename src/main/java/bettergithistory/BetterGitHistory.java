@@ -3,7 +3,7 @@ package bettergithistory;
 import bettergithistory.clients.GitHubRepositoryClient;
 import bettergithistory.clients.JiraProjectClient;
 import bettergithistory.extractors.Distiller;
-import bettergithistory.jgit.JGit;
+import bettergithistory.extractors.JGit;
 import bettergithistory.util.CommitHistoryUtil;
 import bettergithistory.util.FileUtil;
 import ch.uzh.ifi.seal.changedistiller.model.entities.SourceCodeChange;

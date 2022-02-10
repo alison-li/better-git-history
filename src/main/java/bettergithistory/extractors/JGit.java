@@ -1,4 +1,4 @@
-package bettergithistory.jgit;
+package bettergithistory.extractors;
 
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;

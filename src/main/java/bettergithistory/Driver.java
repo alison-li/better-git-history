@@ -2,7 +2,7 @@ package bettergithistory;
 
 import bettergithistory.clients.GitHubRepositoryClient;
 import bettergithistory.clients.JiraProjectClient;
-import bettergithistory.jgit.JGit;
+import bettergithistory.extractors.JGit;
 import bettergithistory.util.FileUtil;
 import net.rcarz.jiraclient.Issue;
 import net.rcarz.jiraclient.JiraException;
