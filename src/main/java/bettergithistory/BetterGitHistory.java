@@ -1,10 +1,13 @@
 package bettergithistory;
 
+import bettergithistory.clients.GitHubRepositoryClient;
 import bettergithistory.extractors.Distiller;
 import bettergithistory.jgit.JGit;
+import bettergithistory.util.CommitHistoryUtil;
 import bettergithistory.util.FileUtil;
 import ch.uzh.ifi.seal.changedistiller.model.entities.SourceCodeChange;
 import org.eclipse.jgit.revwalk.RevCommit;
+import org.kohsuke.github.GHPullRequest;
 
 import java.io.File;
 import java.io.IOException;
@@ -12,6 +15,8 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * A commit history wrapper class for improving an input commit history.
@@ -36,6 +41,32 @@ public class BetterGitHistory {
     }
 
     /**
+     * Retrieve a map linking commits (that can be linked) to a corresponding pull request.
+     * Assumes if a commit has a linked pull request, then the commit message will contain "(#<pull-request-id>)".
+     * @param gitHubRepoClient The client to use to interact with the GitHub repository.
+     * @return A map of commits mapped to corresponding GitHub pull requests.
+     * @throws IOException
+     */
+    public Map<RevCommit, GHPullRequest> getCommitHistoryWithPullRequests(GitHubRepositoryClient gitHubRepoClient)
+            throws IOException {
+        List<RevCommit> commits = CommitHistoryUtil.getCommitsOnly(this.commitMap);
+        Map<RevCommit, GHPullRequest> commitToPullRequestMap = new LinkedHashMap<>();
+        for (RevCommit commit : commits) {
+            String message = commit.getShortMessage();
+            Pattern pattern = Pattern.compile("(\\(#\\d*\\))");
+            Matcher matcher = pattern.matcher(message);
+            if (matcher.find()) {
+                String pullRequestId = matcher.group(1);
+                int extractedId = Integer.parseInt(
+                        pullRequestId.substring(2, pullRequestId.length() - 1)
+                );
+                commitToPullRequestMap.put(commit, gitHubRepoClient.getPullRequestById(extractedId));
+            }
+        }
+        return commitToPullRequestMap;
+    }
+
+    /**
      * Retrieve a filtered version of the commit history using ChangeDistiller.
      * @return The filtered commit history.
      */
@@ -43,7 +74,7 @@ public class BetterGitHistory {
         if (this.commitMap.size() <= 2) return commitMap;
 
         Map<RevCommit, String> filteredCommitMap = new LinkedHashMap<>();
-        List<RevCommit> commits = new ArrayList<>(commitMap.keySet());
+        List<RevCommit> commits = CommitHistoryUtil.getCommitsOnly(commitMap);
         for (int verNum = 0; verNum < this.commitMap.size() - 1; verNum++) {
             int leftVer = verNum;
             int rightVer = verNum + 1;
