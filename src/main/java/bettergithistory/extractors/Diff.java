@@ -21,13 +21,11 @@ public class Diff {
      * Get the diff between two files using java-diff-utils.
      * @throws IOException
      */
-    public static void getDiff(int leftVer, int rightVer) throws IOException {
+    public static List<AbstractDelta<String>> getDiff(int leftVer, int rightVer) throws IOException {
         List<String> left = Files.readAllLines(Paths.get(new File(String.format("temp/ver%d.java", leftVer)).getPath()));
         List<String> right = Files.readAllLines(Paths.get(new File(String.format("temp/ver%d.java", rightVer)).getPath()));
         Patch<String> patch = DiffUtils.diff(left, right);
-        for (AbstractDelta<String> delta : patch.getDeltas()) {
-            System.out.println(delta);
-        }
+        return patch.getDeltas();
     }
 
     /**
