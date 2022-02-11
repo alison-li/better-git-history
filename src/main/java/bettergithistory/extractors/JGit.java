@@ -16,7 +16,10 @@ import org.eclipse.jgit.treewalk.TreeWalk;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.*;
+import java.net.URI;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * For interfacing with JGit.
@@ -25,6 +28,11 @@ public class JGit {
     private final Repository repository;
     private final Git git;
 
+    /**
+     * Use existing Git repository in local file system.
+     * @param gitPath
+     * @throws RepositoryNotFoundException
+     */
     public JGit(String gitPath) throws RepositoryNotFoundException {
         FileRepositoryBuilder builder = new FileRepositoryBuilder();
         try {
@@ -37,6 +45,20 @@ public class JGit {
             throw new RepositoryNotFoundException(gitPath, e);
         }
         this.git = new Git(repository);
+    }
+
+    /**
+     * Clone a Git repository.
+     * @param gitURI
+     * @throws GitAPIException
+     */
+    public JGit(URI gitURI) throws GitAPIException {
+        this.git = Git.cloneRepository()
+                .setCloneSubmodules(true)
+                .setURI(gitURI.toString())
+                .setDirectory(new File("cloned-repo"))
+                .call();
+        this.repository = git.getRepository();
     }
 
     /**
@@ -75,20 +97,25 @@ public class JGit {
     /**
      * Takes a file's commit history and generates what the file looked like for each commit.
      * The resulting files are in the "out" directory with the name being "ver#.java" where # is the version of the
-     * file and 0 represents the most recent version of the file (i.e. most recent commit in the file's commit history).
+     * file and 0 represents the oldest version of the file.
      * @param commitMap A file's commit history.
+     * @return A map of commits mapped to the file path for their generated file versions.
      * @throws IOException From calling a class method for writing files.
      */
-    public void generateFilesFromFileCommitHistory(Map<RevCommit, String> commitMap) throws IOException {
-        // Counter starts from the size of the commit history because commitMap is ordered from most recent commit
-        // to oldest.
-        int count = 0;
+    public Map<RevCommit, String> generateFilesFromFileCommitHistory(Map<RevCommit, String> commitMap)
+            throws IOException {
+        Map<RevCommit, String> commitToFileVerMap = new LinkedHashMap<>();
+        // Recall that the commit map is ordered from most recent commit to oldest.
+        int count = commitMap.size() - 1;
         for (Map.Entry<RevCommit, String> entry : commitMap.entrySet()) {
             RevCommit commit = entry.getKey();
             String filePath = entry.getValue();
-            this.getFileFromCommit(commit, filePath, String.format("temp/ver%d.java", count));
-            count++;
+            String newFilePath = String.format("temp/ver%d.java", count);
+            this.getFileFromCommit(commit, filePath, newFilePath);
+            commitToFileVerMap.put(commit, newFilePath);
+            count--;
         }
+        return commitToFileVerMap;
     }
 
     /**
@@ -96,9 +123,8 @@ public class JGit {
      * @param commit The commit to retrieve the file from.
      * @param filePath The file to retrieve.
      * @param newFilePath The file path of the newly created file that will store the contents of the retrieved file.
-     * @return The retrieved file in the commit.
      */
-    public File getFileFromCommit(RevCommit commit, String filePath, String newFilePath) throws IOException {
+    public void getFileFromCommit(RevCommit commit, String filePath, String newFilePath) throws IOException {
         File file = new File(newFilePath);
         if (file.createNewFile()) {
             try (TreeWalk treeWalk = TreeWalk.forPath(repository, filePath, commit.getTree())) {
@@ -111,7 +137,6 @@ public class JGit {
         } else {
             throw new IllegalArgumentException("New file path already exists. Please try another file path to store the result in.");
         }
-        return file;
     }
 
     /**
