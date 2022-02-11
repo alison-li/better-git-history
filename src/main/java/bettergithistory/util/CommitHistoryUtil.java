@@ -43,7 +43,9 @@ public class CommitHistoryUtil {
             RevCommit commit = entry.getKey();
             GHPullRequest pullRequest = entry.getValue();
             JSONObject jsonObject = new JSONObject();
-            jsonObject.put("commitAuthor", commit.getAuthorIdent().getName());
+            jsonObject.put("commitAuthorName", commit.getAuthorIdent().getName());
+            jsonObject.put("commitAuthorEmail", commit.getAuthorIdent().getEmailAddress());
+            jsonObject.put("commitTime", commit.getCommitTime());
             jsonObject.put("commitShortMessage", commit.getShortMessage());
             jsonObject.put("commitFullMessage", commit.getFullMessage());
             if (pullRequest != null) {
@@ -82,7 +84,9 @@ public class CommitHistoryUtil {
             RevCommit commit = entry.getKey();
             Issue issue = entry.getValue();
             JSONObject jsonObject = new JSONObject();
-            jsonObject.put("commitAuthor", commit.getAuthorIdent().getName());
+            jsonObject.put("commitAuthorName", commit.getAuthorIdent().getName());
+            jsonObject.put("commitAuthorEmail", commit.getAuthorIdent().getEmailAddress());
+            jsonObject.put("commitTime", commit.getCommitTime());
             jsonObject.put("commitShortMessage", commit.getShortMessage());
             jsonObject.put("commitFullMessage", commit.getFullMessage());
             if (issue != null) {
@@ -98,15 +102,16 @@ public class CommitHistoryUtil {
                 JsonConfig commentConfig = new JsonConfig();
                 commentConfig.setExcludes(new String[] {"self", "updateAuthor", "createdDate", "updatedDate"});
                 JSONArray comments = JSONArray.fromObject(issue.getComments(), commentConfig);
-                for (Object obj : comments) {
-                    JSONObject jsonComment = (JSONObject) obj;
-                    jsonComment.getJSONObject("author").remove("active");
-                    jsonComment.getJSONObject("author").remove("avatarUrls");
-                    jsonComment.getJSONObject("author").remove("id");
-                    jsonComment.getJSONObject("author").remove("self");
-                    jsonComment.getJSONObject("author").remove("url");
+                if (!comments.isEmpty()) {
+                    for (Object obj : comments) {
+                        JSONObject jsonComment = (JSONObject) obj;
+                        jsonComment.getJSONObject("author").remove("active");
+                        jsonComment.getJSONObject("author").remove("avatarUrls");
+                        jsonComment.getJSONObject("author").remove("id");
+                        jsonComment.getJSONObject("author").remove("self");
+                        jsonComment.getJSONObject("author").remove("url");
+                    }
                 }
-
                 jsonObject.put("issueComments", comments);
             }
             jsonArray.add(jsonObject);
