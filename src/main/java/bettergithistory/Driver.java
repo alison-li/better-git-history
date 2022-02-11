@@ -16,6 +16,7 @@ public class Driver {
     public static void main(String[] args) throws IOException, JiraException {
         // Clean the temp directory used for handling generated files
         FileUtil.cleanTempDirectory();
+        testGitHub();
         testJira();
     }
 

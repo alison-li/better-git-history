@@ -1,5 +1,6 @@
 package bettergithistory.clients;
 
+import io.github.cdimascio.dotenv.Dotenv;
 import org.kohsuke.github.*;
 
 import java.io.IOException;
@@ -14,8 +15,10 @@ public class GitHubRepositoryClient {
     private final GHRepository repo;
 
     public GitHubRepositoryClient(String repo) throws IOException {
+        Dotenv dotEnv = Dotenv.load();
+        String authToken = dotEnv.get("GITHUB_AUTH_TOKEN");
         this.github = new GitHubBuilder()
-                .withOAuthToken("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") // using personal token for now
+                .withOAuthToken(authToken) // using personal token for now
                 .build();
         this.repo = github.getRepository(repo);
     }
