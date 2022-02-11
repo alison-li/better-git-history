@@ -1,7 +1,14 @@
 package bettergithistory.util;
 
+import net.rcarz.jiraclient.Issue;
+import net.sf.json.JSONArray;
+import net.sf.json.JSONObject;
 import org.eclipse.jgit.revwalk.RevCommit;
+import org.kohsuke.github.GHIssueComment;
+import org.kohsuke.github.GHPullRequest;
 
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -11,7 +18,7 @@ import java.util.Map;
  */
 public class CommitHistoryUtil {
     /**
-     * Prints commit information in an easy-to-read format.
+     * Prints commit information from commit to file path in an easy-to-read format.
      * @param commitMap The commits to print.
      */
     public static void printCommitHistory(Map<RevCommit, String> commitMap) {
@@ -21,6 +28,74 @@ public class CommitHistoryUtil {
                     commit.getShortMessage());
             System.out.println(formatted);
         }
+    }
+
+    /**
+     * Writes the commits and linked pull requests to a JSON file.
+     * @param commitMap The commits to write.
+     */
+    public static void writeCommitHistoryWithPullRequestsToJSON(Map<RevCommit, GHPullRequest> commitMap)
+            throws IOException {
+        FileWriter file = new FileWriter("json/commitsToPullRequests.json");
+        JSONArray jsonArray = new JSONArray();
+        for (Map.Entry<RevCommit, GHPullRequest> entry : commitMap.entrySet()) {
+            RevCommit commit = entry.getKey();
+            GHPullRequest pullRequest = entry.getValue();
+            JSONObject jsonObject = new JSONObject();
+            jsonObject.put("commitAuthor", commit.getAuthorIdent().getName());
+            jsonObject.put("commitShortMessage", commit.getShortMessage());
+            if (pullRequest != null) {
+                jsonObject.put("pullRequestUrl", pullRequest.getUrl().toString());
+                jsonObject.put("pullRequestUser", pullRequest.getUser().getName());
+                jsonObject.put("pullRequestTitle", pullRequest.getTitle());
+                jsonObject.put("pullRequestBody", pullRequest.getBody());
+
+                // Avoid circular hierarchy exception
+                JSONArray jsonCommentArray = new JSONArray();
+                for (GHIssueComment comment : pullRequest.getComments()) {
+                    JSONObject jsonCommentObject = new JSONObject();
+                    jsonCommentObject.put("commentBody", comment.getBody());
+                    jsonCommentObject.put("commentUser", comment.getUser().getName());
+                    jsonCommentArray.add(jsonCommentObject);
+                }
+
+                jsonObject.put("pullRequestComments", jsonCommentArray);
+            }
+            jsonArray.add(jsonObject);
+        }
+        file.write(jsonArray.toString());
+        file.close();
+    }
+
+    /**
+     * Writes the commits and linked Jira issue information to a JSON file.
+     * @param commitMap The commits to write.
+     * @throws IOException
+     */
+    public static void writeCommitHistoryWithJiraIssuesToJSON(Map<RevCommit, Issue> commitMap)
+            throws IOException {
+        FileWriter file = new FileWriter("json/commitsToJiraIssues.json");
+        JSONArray jsonArray = new JSONArray();
+        for (Map.Entry<RevCommit, Issue> entry : commitMap.entrySet()) {
+            RevCommit commit = entry.getKey();
+            Issue issue = entry.getValue();
+            JSONObject jsonObject = new JSONObject();
+            jsonObject.put("commitAuthor", commit.getAuthorIdent().getName());
+            jsonObject.put("commitShortMessage", commit.getShortMessage());
+            if (issue != null) {
+                jsonObject.put("issueKey", issue.getKey());
+                jsonObject.put("issueAssignee", String.valueOf(issue.getAssignee()));
+                jsonObject.put("issuePriority", String.valueOf(issue.getPriority()));
+                jsonObject.put("issueSummary", issue.getSummary());
+                jsonObject.put("issueDescription", issue.getDescription());
+                jsonObject.put("issueSubtasks", issue.getSubtasks());
+                jsonObject.put("issueLinks", issue.getIssueLinks());
+                jsonObject.put("issueComments", issue.getComments());
+            }
+            jsonArray.add(jsonObject);
+        }
+        file.write(jsonArray.toString());
+        file.close();
     }
 
     /**
