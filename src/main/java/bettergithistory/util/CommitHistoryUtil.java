@@ -3,6 +3,7 @@ package bettergithistory.util;
 import net.rcarz.jiraclient.Issue;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
+import net.sf.json.JsonConfig;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.kohsuke.github.GHIssueComment;
 import org.kohsuke.github.GHPullRequest;
@@ -44,6 +45,7 @@ public class CommitHistoryUtil {
             JSONObject jsonObject = new JSONObject();
             jsonObject.put("commitAuthor", commit.getAuthorIdent().getName());
             jsonObject.put("commitShortMessage", commit.getShortMessage());
+            jsonObject.put("commitFullMessage", commit.getFullMessage());
             if (pullRequest != null) {
                 jsonObject.put("pullRequestUrl", pullRequest.getUrl().toString());
                 jsonObject.put("pullRequestUser", pullRequest.getUser().getName());
@@ -82,6 +84,7 @@ public class CommitHistoryUtil {
             JSONObject jsonObject = new JSONObject();
             jsonObject.put("commitAuthor", commit.getAuthorIdent().getName());
             jsonObject.put("commitShortMessage", commit.getShortMessage());
+            jsonObject.put("commitFullMessage", commit.getFullMessage());
             if (issue != null) {
                 jsonObject.put("issueKey", issue.getKey());
                 jsonObject.put("issueAssignee", String.valueOf(issue.getAssignee()));
@@ -90,7 +93,21 @@ public class CommitHistoryUtil {
                 jsonObject.put("issueDescription", issue.getDescription());
                 jsonObject.put("issueSubtasks", issue.getSubtasks());
                 jsonObject.put("issueLinks", issue.getIssueLinks());
-                jsonObject.put("issueComments", issue.getComments());
+
+                // Avoid extraneous information
+                JsonConfig commentConfig = new JsonConfig();
+                commentConfig.setExcludes(new String[] {"self", "updateAuthor", "createdDate", "updatedDate"});
+                JSONArray comments = JSONArray.fromObject(issue.getComments(), commentConfig);
+                for (Object obj : comments) {
+                    JSONObject jsonComment = (JSONObject) obj;
+                    jsonComment.getJSONObject("author").remove("active");
+                    jsonComment.getJSONObject("author").remove("avatarUrls");
+                    jsonComment.getJSONObject("author").remove("id");
+                    jsonComment.getJSONObject("author").remove("self");
+                    jsonComment.getJSONObject("author").remove("url");
+                }
+
+                jsonObject.put("issueComments", comments);
             }
             jsonArray.add(jsonObject);
         }
