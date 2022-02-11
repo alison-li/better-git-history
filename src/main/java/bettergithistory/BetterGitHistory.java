@@ -33,14 +33,10 @@ public class BetterGitHistory {
      * Instantiate a commit history abstraction.
      * @param jgit The JGit object associated with the commit history.
      * @param commitMap The original commit history to we want to improve and manipulate.
-     * @throws IOException
      */
-    public BetterGitHistory(JGit jgit, Map<RevCommit, String> commitMap) throws IOException {
+    public BetterGitHistory(JGit jgit, Map<RevCommit, String> commitMap) {
         this.jgit = jgit;
         this.commitMap = commitMap;
-        if (FileUtil.isTempDirectoryEmpty()) {
-            jgit.generateFilesFromFileCommitHistory(this.commitMap);
-        }
     }
 
     /**
@@ -100,8 +96,12 @@ public class BetterGitHistory {
      * Retrieve a filtered version of the commit history using ChangeDistiller.
      * @return The filtered commit history.
      */
-    public Map<RevCommit, String> getChangeDistillerCommitHistory() {
+    public Map<RevCommit, String> getChangeDistillerCommitHistory() throws IOException {
         if (this.commitMap.size() <= 2) return commitMap;
+
+        if (FileUtil.isTempDirectoryEmpty()) {
+            jgit.generateFilesFromFileCommitHistory(this.commitMap);
+        }
 
         Map<RevCommit, String> filteredCommitMap = new LinkedHashMap<>();
         List<RevCommit> commits = CommitHistoryUtil.getCommitsOnly(commitMap);
@@ -127,42 +127,13 @@ public class BetterGitHistory {
     }
 
     /**
-     * Removed for now due to few results using ChangeDistiller.
-     * Two pointer approach to comparing files.
-     */
-//    public Map<RevCommit, String> getFilteredCommitHistoryWithFileHop() {
-//        if (this.commitMap.size() <= 2) return commitMap;
-//
-//        Map<RevCommit, String> filteredCommitMap = new LinkedHashMap<>();
-//        List<RevCommit> commits = new ArrayList<>(this.commitMap.keySet());
-//        int leftVer = 0;
-//        int rightVer = 1;
-//        while (rightVer < this.commitMap.size()) {
-//            File left = new File(String.format("temp/ver%d.java", leftVer));
-//            File right = new File(String.format("temp/ver%d.java", rightVer));
-//            List<SourceCodeChange> changes = Distiller.extractSourceCodeChanges(left, right);
-//            if (!changes.isEmpty()) {
-//                System.out.printf("HIT VER %d -> VER %d%n", leftVer, rightVer);
-//                // Keep both commits in the history since the change list is non-empty between the two versions.
-//                RevCommit firstCommit = commits.get(leftVer);
-//                String firstPath = this.commitMap.get(firstCommit);
-//                RevCommit secondCommit = commits.get(rightVer);
-//                String secondPath = this.commitMap.get(secondCommit);
-//                filteredCommitMap.put(firstCommit, firstPath);
-//                filteredCommitMap.put(secondCommit, secondPath);
-//                leftVer = rightVer;
-//            }
-//            rightVer++;
-//        }
-//
-//        return filteredCommitMap;
-//    }
-
-    /**
      * Retrieve all of the source code changes performed in a file.
      * @return A chronological list of the source code change operations performed.
      */
-    public List<List<SourceCodeChange>> getAllChangeDistillerSourceCodeChanges() {
+    public List<List<SourceCodeChange>> getAllChangeDistillerSourceCodeChanges() throws IOException {
+        if (FileUtil.isTempDirectoryEmpty()) {
+            jgit.generateFilesFromFileCommitHistory(this.commitMap);
+        }
         List<List<SourceCodeChange>> allSourceCodeChanges = new ArrayList<>();
         // This will give us a chronological list of source code changes since the commit map
         // is ordered from most recent commit to oldest.
