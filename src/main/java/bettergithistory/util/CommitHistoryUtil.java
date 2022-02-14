@@ -49,7 +49,6 @@ public class CommitHistoryUtil {
             jsonObject.put("commitShortMessage", commit.getShortMessage());
             jsonObject.put("commitFullMessage", commit.getFullMessage());
             if (pullRequest != null) {
-                jsonObject.put("pullRequestUrl", pullRequest.getUrl().toString());
                 jsonObject.put("pullRequestUser", pullRequest.getUser().getName());
                 jsonObject.put("pullRequestTitle", pullRequest.getTitle());
                 jsonObject.put("pullRequestBody", pullRequest.getBody());
