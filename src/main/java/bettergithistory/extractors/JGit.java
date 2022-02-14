@@ -110,7 +110,7 @@ public class JGit {
         for (Map.Entry<RevCommit, String> entry : commitMap.entrySet()) {
             RevCommit commit = entry.getKey();
             String filePath = entry.getValue();
-            String newFilePath = String.format("temp/ver%d.java", count);
+            String newFilePath = String.format("temp/ver%d", count);
             this.getFileFromCommit(commit, filePath, newFilePath);
             commitToFileVerMap.put(commit, newFilePath);
             count--;
