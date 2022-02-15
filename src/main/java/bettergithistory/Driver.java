@@ -21,8 +21,9 @@ public class Driver {
     public static void main(String[] args) throws IOException, JiraException {
 //        testGitHub();
 //        testJira();
-         List<List<AbstractDelta<String>>> res = testDiff();
-         System.out.println(res); // TODO: Inspect this later to see the performance of the diff library
+         List<List<AbstractDelta<String>>> res = testDiff("../kafka",
+                 "streams/src/main/java/org/apache/kafka/streams/Topology.java");
+         System.out.println(res);
     }
 
     public static void testFileVersionGeneration(String gitPath, String fileName)
@@ -33,13 +34,11 @@ public class Driver {
         jgit.generateFilesFromFileCommitHistory(commitMap);
     }
 
-    public static List<List<AbstractDelta<String>>> testDiff() throws IOException {
-        JGit jgit = new JGit("../kafka");
-        String fileName = "streams/src/main/java/org/apache/kafka/streams/Topology.java";
-        Map<RevCommit, String> commitMap = jgit.getFileCommitHistory(fileName);
+    public static List<List<AbstractDelta<String>>> testDiff(String repoPath, String filePath) throws IOException {
+        JGit jgit = new JGit(repoPath);
+        Map<RevCommit, String> commitMap = jgit.getFileCommitHistory(filePath);
 
-        testFileVersionGeneration("../kafka",
-                "streams/src/main/java/org/apache/kafka/streams/Topology.java");
+        testFileVersionGeneration(repoPath, filePath);
 
         List<List<AbstractDelta<String>>> deltasPerCommit = new ArrayList<>();
         for (int i = 0; i < commitMap.size() - 1; i++) {
