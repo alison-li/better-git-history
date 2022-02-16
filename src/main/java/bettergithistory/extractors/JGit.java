@@ -104,9 +104,13 @@ public class JGit {
      */
     public Map<RevCommit, String> generateFilesFromFileCommitHistory(Map<RevCommit, String> commitMap)
             throws IOException {
+        // Generate a dummy file as the first commit adds a file/content to a file.
+        File dummyFile = new File("temp/ver0");
+        dummyFile.createNewFile();
+
         Map<RevCommit, String> commitToFileVerMap = new LinkedHashMap<>();
         // Recall that the commit map is ordered from most recent commit to oldest.
-        int count = commitMap.size() - 1;
+        int count = commitMap.size();
         for (Map.Entry<RevCommit, String> entry : commitMap.entrySet()) {
             RevCommit commit = entry.getKey();
             String filePath = entry.getValue();

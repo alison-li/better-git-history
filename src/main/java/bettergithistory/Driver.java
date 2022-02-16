@@ -13,7 +13,8 @@ import org.eclipse.jgit.revwalk.RevCommit;
 import org.kohsuke.github.GHPullRequest;
 
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -21,7 +22,7 @@ public class Driver {
     public static void main(String[] args) throws IOException, JiraException {
 //        testGitHub();
 //        testJira();
-         List<List<AbstractDelta<String>>> res = testDiff("../kafka",
+        Map<String, List<AbstractDelta<String>>> res = testDiff("../kafka",
                  "streams/src/main/java/org/apache/kafka/streams/Topology.java");
          System.out.println(res);
     }
@@ -34,20 +35,26 @@ public class Driver {
         jgit.generateFilesFromFileCommitHistory(commitMap);
     }
 
-    public static List<List<AbstractDelta<String>>> testDiff(String repoPath, String filePath) throws IOException {
+    public static Map<String, List<AbstractDelta<String>>> testDiff(String repoPath, String filePath) throws IOException {
         JGit jgit = new JGit(repoPath);
         Map<RevCommit, String> commitMap = jgit.getFileCommitHistory(filePath);
 
         testFileVersionGeneration(repoPath, filePath);
 
-        List<List<AbstractDelta<String>>> deltasPerCommit = new ArrayList<>();
+        Map<String, List<AbstractDelta<String>>> commitDiffMap = new LinkedHashMap<>();
+        List<RevCommit> commits = CommitHistoryUtil.getCommitsOnly(commitMap);
+        Collections.reverse(commits);
+
         for (int i = 0; i < commitMap.size() - 1; i++) {
             int leftVer = i;
             int rightVer = i + 1;
+            // The right commit is the one changing the left, so we are more concerned with mapping
+            // the right commit to the delta
+            String commitTitle = commits.get(rightVer).getShortMessage();
             List<AbstractDelta<String>> delta = Diff.getDiff(leftVer, rightVer);
-            deltasPerCommit.add(delta);
+            commitDiffMap.put(commitTitle, delta);
         }
-        return deltasPerCommit;
+        return commitDiffMap;
     }
 
     public static void testGitHub() throws IOException {
