@@ -1,0 +1,1 @@
+This is where JSON files generated from aggregating commit information and extracting relevant pull request or JIRA information will go.
