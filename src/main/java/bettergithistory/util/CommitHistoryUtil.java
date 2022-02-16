@@ -104,6 +104,8 @@ public class CommitHistoryUtil {
                 if (!comments.isEmpty()) {
                     for (Object obj : comments) {
                         JSONObject jsonComment = (JSONObject) obj;
+                        jsonComment.remove("url");
+                        jsonComment.remove("id");
                         jsonComment.getJSONObject("author").remove("active");
                         jsonComment.getJSONObject("author").remove("avatarUrls");
                         jsonComment.getJSONObject("author").remove("id");
