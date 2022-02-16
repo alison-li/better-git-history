@@ -45,7 +45,12 @@ public class Driver {
         List<RevCommit> commits = CommitHistoryUtil.getCommitsOnly(commitMap);
         Collections.reverse(commits);
 
-        for (int i = 0; i < commitMap.size() - 1; i++) {
+        // Handling for a file's very first commit:
+        // We need a dummy commit (blank file) to compare the first commit diff with
+        // so that the first commit qualifies as having a diff.
+        commits.add(0, null);
+
+        for (int i = 0; i < commits.size() - 1; i++) {
             int leftVer = i;
             int rightVer = i + 1;
             // The right commit is the one changing the left, so we are more concerned with mapping
