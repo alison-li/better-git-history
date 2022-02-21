@@ -1,5 +1,6 @@
 package bettergithistory.extractors;
 
+import bettergithistory.util.FileUtil;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.diff.DiffEntry;
@@ -104,6 +105,10 @@ public class JGit {
      */
     public Map<RevCommit, String> generateFilesFromFileCommitHistory(Map<RevCommit, String> commitMap)
             throws IOException {
+        if (!FileUtil.isTempDirectoryEmpty()) {
+            FileUtil.cleanTempDirectory();
+        }
+
         // Generate a dummy file as the first commit adds a file/content to a file.
         File dummyFile = new File("temp/ver0");
         dummyFile.createNewFile();
