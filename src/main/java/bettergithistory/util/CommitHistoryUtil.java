@@ -1,5 +1,6 @@
 package bettergithistory.util;
 
+import bettergithistory.LineCategorizationType;
 import net.rcarz.jiraclient.Issue;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
@@ -27,6 +28,24 @@ public class CommitHistoryUtil {
             RevCommit commit = entry.getKey();
             String formatted = String.format("%-25s %-10s", commit.getAuthorIdent().getName(),
                     commit.getShortMessage());
+            System.out.println(formatted);
+        }
+    }
+
+    /**
+     * Prints annotated commit information where a commit is annotated for removal/de-emphasis due to the content
+     * of the commit being trivial.
+     * @param annotatedCommitMap A commit map where each commit is mapped to annotations if it is judged to be trivial.
+     */
+    public static void printAnnotatedCommitHistory(Map<RevCommit, List<LineCategorizationType>> annotatedCommitMap) {
+        for (Map.Entry<RevCommit, List<LineCategorizationType>> entry : annotatedCommitMap.entrySet()) {
+            RevCommit commit = entry.getKey();
+            List<LineCategorizationType> lineCategorizations = entry.getValue();
+            String decision = "";
+            if (lineCategorizations != null) {
+                decision = lineCategorizations.toString();
+            }
+            String formatted = String.format("%-100s %-10s", commit.getShortMessage(), decision);
             System.out.println(formatted);
         }
     }

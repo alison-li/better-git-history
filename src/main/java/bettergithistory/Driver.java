@@ -23,9 +23,9 @@ public class Driver {
 //                 "streams/src/main/java/org/apache/kafka/streams/Topology.java");
 //         System.out.println(res);
 
-         List<String> res = testReduceCommitDensity("../kafka",
+        Map<RevCommit, List<LineCategorizationType>> res = testReduceCommitDensity("../kafka",
                  "streams/src/main/java/org/apache/kafka/streams/Topology.java");
-         System.out.println(res);
+         CommitHistoryUtil.printAnnotatedCommitHistory(res);
     }
 
     public static void testFileVersionGeneration(String gitPath, String fileName)
@@ -33,6 +33,17 @@ public class Driver {
         JGit jgit = new JGit(gitPath);
         Map<RevCommit, String> commitMap = jgit.getFileCommitHistory(fileName);
         jgit.generateFilesFromFileCommitHistory(commitMap);
+    }
+
+    public static Map<RevCommit, List<LineCategorizationType>> testReduceCommitDensity(String repoPath, String filePath) throws Exception {
+        JGit jgit = new JGit(repoPath);
+        Map<RevCommit, String> commitMap = jgit.getFileCommitHistory(filePath);
+        BetterGitHistory betterGitHistory = new BetterGitHistory(jgit, commitMap);
+        List<String> filterWords = new ArrayList<>();
+        filterWords.add("MINOR");
+        // filterWords.add("refactor");
+        Map<RevCommit, List<LineCategorizationType>> filteredCommits = betterGitHistory.getAnnotatedCommitHistory(filterWords);
+        return filteredCommits;
     }
 
     public static Map<String, List<AbstractDelta<String>>> testDiff(String repoPath, String filePath) throws IOException {
@@ -45,21 +56,6 @@ public class Driver {
             readableDiffMap.put(entry.getKey().getShortMessage(), entry.getValue());
         }
         return readableDiffMap;
-    }
-
-    public static List<String> testReduceCommitDensity(String repoPath, String filePath) throws Exception {
-        JGit jgit = new JGit(repoPath);
-        Map<RevCommit, String> commitMap = jgit.getFileCommitHistory(filePath);
-        BetterGitHistory betterGitHistory = new BetterGitHistory(jgit, commitMap);
-        List<String> filterWords = new ArrayList<>();
-        filterWords.add("MINOR");
-        // filterWords.add("refactor");
-        List<RevCommit> filteredCommits = betterGitHistory.reduceCommitDensity(filterWords);
-        List<String> commitTitles = new ArrayList<>();
-        for (RevCommit commit : filteredCommits) {
-            commitTitles.add(commit.getShortMessage());
-        }
-        return commitTitles;
     }
 
     public static void testGitHub() throws IOException {
