@@ -1,7 +1,6 @@
 package bettergithistory;
 
 import bettergithistory.clients.GitHubRepositoryClient;
-import bettergithistory.clients.IssueTrackingClient;
 import bettergithistory.clients.JiraProjectClient;
 import bettergithistory.extractors.Diff;
 import bettergithistory.extractors.JGit;
@@ -93,14 +92,23 @@ public class BetterGitHistory {
         return commitToJiraIssueMap;
     }
 
-    public List<RevCommit> filterByCodeDiff() throws IOException {
+    /**
+     * Helper method for reducing the commit history of this BetterGitHistory instance.
+     * file by using regex to detect "trivial" code diffs between commits.
+     * @return A list of the filtered commits.
+     * @throws IOException
+     */
+    private List<RevCommit> filterByCodeDiff() throws IOException {
         jgit.generateFilesFromFileCommitHistory(commitMap);
         List<RevCommit> filteredCommits = new ArrayList<>();
+        // Each commit is associated with a list of deltas.
         Map<RevCommit, List<AbstractDelta<String>>> commitDiffMap = Diff.getCommitDiffMap(commitMap);
         for (Map.Entry<RevCommit, List<AbstractDelta<String>>> diffEntry : commitDiffMap.entrySet()) {
             RevCommit commit = diffEntry.getKey();
             List<AbstractDelta<String>> deltas = diffEntry.getValue();
             boolean containsOtherChange = false;
+            // Each delta has a "source" list of lines affected and a "target" list of lines affected.
+            // The source is the original version's lines and the target is the new version's lines.
             for (AbstractDelta<String> delta : deltas) {
                 DeltaType deltaType = delta.getType();
                 if (deltaType == DeltaType.CHANGE) {
@@ -125,12 +133,20 @@ public class BetterGitHistory {
         return filteredCommits;
     }
 
+    /**
+     * Helper method for filtering commits by code diff.
+     * @param lineList A list of lines associated with a delta.
+     * @return TODO: Work on returning all of the booleans for categorization.
+     */
     private boolean evaluateDeltaByLine(List<String> lineList) {
-        // TODO: Save these variables for later. Can categorize reasons for de-emphasizing commits
-        boolean containsDocChange, containsAnnotationChange, containsImportChange, containsNewLineChange, containsOtherChange;
-        containsDocChange = containsAnnotationChange = containsImportChange = containsNewLineChange = containsOtherChange = false;
+        boolean containsDocChange, containsAnnotationChange, containsImportChange,
+                containsNewLineChange, containsOtherChange;
+        containsDocChange = containsAnnotationChange = containsImportChange = containsNewLineChange
+                = containsOtherChange = false;
         for (String line : lineList) {
-            if (line.matches("(.*)\\*(.*)") || line.matches("(.*)/\\*(.*)") || line.matches("(.*)//(.*)")) {
+            if (line.matches("(.*)\\*(.*)")
+                    || line.matches("(.*)/\\*(.*)")
+                    || line.matches("(.*)//(.*)")) {
                 containsDocChange = true;
             } else if (line.matches("(.*)import(.*)")) {
                 containsImportChange = true;
@@ -146,33 +162,41 @@ public class BetterGitHistory {
         return containsOtherChange;
     }
 
-    public List<RevCommit> filterByCommitMessage(List<RevCommit> commits) {
+    /**
+     * Helper method for allowing the user to decide what words appearing in commits they would prefer filter out.
+     * Examines the filter words given in a commit's full message.
+     * @param commits The list of commits to filter.
+     * @param customFilterWords The list of words to search for in trivial commits.
+     * @return A list of filtered commits.
+     */
+    private List<RevCommit> filterByCommitMessage(List<RevCommit> commits, List<String> customFilterWords) {
+        if (customFilterWords.isEmpty()) return commits;
         List<RevCommit> filteredCommits = new ArrayList<>();
-        return filteredCommits;
-    }
-
-    public List<RevCommit> filterByIssueTracker(IssueTrackingClient client, List<RevCommit> commits) throws Exception {
-        List<RevCommit> filteredCommits = new ArrayList<>();
-        if (client instanceof JiraProjectClient) {
-            JiraProjectClient jiraProjectClient = (JiraProjectClient) client;
-            Map<RevCommit, Issue> commitsWithJira = this.getCommitHistoryWithJiraIssue(jiraProjectClient, commits);
-            // TODO: Do stuff with the Jira contents
-        } else if (client instanceof GitHubRepositoryClient) {
-            GitHubRepositoryClient gitHubRepositoryClient = (GitHubRepositoryClient) client;
-            Map<RevCommit, GHPullRequest> commitsWithGitHub = this.getCommitHistoryWithPullRequests(gitHubRepositoryClient, commits);
-            // TODO: Do stuff with the GitHub content
-        } else {
-            throw new Exception("Issue tracking client not recognized.");
+        for (RevCommit commit : commits) {
+            String commitMessage = commit.getFullMessage();
+            boolean containsTrivialWord = false;
+            for (String trivialWord : customFilterWords) {
+                if (commitMessage.contains(trivialWord)) {
+                    containsTrivialWord = true;
+                    break;
+                }
+            }
+            if (!containsTrivialWord) {
+                filteredCommits.add(commit);
+            }
         }
         return filteredCommits;
     }
 
-    public List<RevCommit> reduceCommitDensity(IssueTrackingClient client) throws Exception {
+    /**
+     * Filters the commit history for this BetterGitHistory instance by looking at the code changes between
+     * commits and a custom list of words to search for in commit messages to indicate less useful commits.
+     * @param filterWords The list of words to use for removing trivial commits.
+     * @return A list of filtered commits.
+     * @throws Exception
+     */
+    public List<RevCommit> reduceCommitDensity(List<String> filterWords) throws Exception {
         List<RevCommit> firstPassCommits = this.filterByCodeDiff();
-        List<RevCommit> secondPassCommits = this.filterByCommitMessage(firstPassCommits);
-        return this.filterByIssueTracker(client, secondPassCommits);
-
-        // TODO: We might want to do a final pass here to compare the reduced list with the original list, then
-        // annotate the less important commits; basically, don't remove commits but de-emphasize less important ones.
+        return this.filterByCommitMessage(firstPassCommits, filterWords);
     }
 }

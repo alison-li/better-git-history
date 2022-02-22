@@ -18,14 +18,14 @@ import java.util.List;
 import java.util.Map;
 
 public class Driver {
-    public static void main(String[] args) throws IOException, JiraException {
+    public static void main(String[] args) throws Exception {
 //        Map<String, List<AbstractDelta<String>>> res = testDiff("../kafka",
 //                 "streams/src/main/java/org/apache/kafka/streams/Topology.java");
 //         System.out.println(res);
 
-         List<String> filteredCommitsByCode = testFilterByCodeDiff("../kafka",
+         List<String> res = testReduceCommitDensity("../kafka",
                  "streams/src/main/java/org/apache/kafka/streams/Topology.java");
-         System.out.println(filteredCommitsByCode);
+         System.out.println(res);
     }
 
     public static void testFileVersionGeneration(String gitPath, String fileName)
@@ -47,13 +47,16 @@ public class Driver {
         return readableDiffMap;
     }
 
-    public static List<String> testFilterByCodeDiff(String repoPath, String filePath) throws IOException {
+    public static List<String> testReduceCommitDensity(String repoPath, String filePath) throws Exception {
         JGit jgit = new JGit(repoPath);
         Map<RevCommit, String> commitMap = jgit.getFileCommitHistory(filePath);
         BetterGitHistory betterGitHistory = new BetterGitHistory(jgit, commitMap);
-        List<RevCommit> commits = betterGitHistory.filterByCodeDiff();
+        List<String> filterWords = new ArrayList<>();
+        filterWords.add("MINOR");
+        // filterWords.add("refactor");
+        List<RevCommit> filteredCommits = betterGitHistory.reduceCommitDensity(filterWords);
         List<String> commitTitles = new ArrayList<>();
-        for (RevCommit commit : commits) {
+        for (RevCommit commit : filteredCommits) {
             commitTitles.add(commit.getShortMessage());
         }
         return commitTitles;
