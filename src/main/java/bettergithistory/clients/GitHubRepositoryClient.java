@@ -10,7 +10,7 @@ import java.io.IOException;
  * We only care about interacting with pull requests in a given repository, so we use this class as a client for
  * extracting information from a repository.
  */
-public class GitHubRepositoryClient {
+public class GitHubRepositoryClient implements IssueTrackingClient {
     private final GitHub github;
     private final GHRepository repo;
 

@@ -9,7 +9,7 @@ import net.rcarz.jiraclient.JiraException;
 /**
  * For interfacing with Jira REST Client API.
  */
-public class JiraProjectClient {
+public class JiraProjectClient implements IssueTrackingClient {
     private final JiraClient jira;
 
     public JiraProjectClient(String jiraUrl) {
