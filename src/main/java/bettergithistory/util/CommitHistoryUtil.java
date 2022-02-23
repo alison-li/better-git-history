@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Utility methods for working with the commit map (representing Git history) of a file.
@@ -37,10 +38,10 @@ public class CommitHistoryUtil {
      * of the commit being trivial.
      * @param annotatedCommitMap A commit map where each commit is mapped to annotations if it is judged to be trivial.
      */
-    public static void printAnnotatedCommitHistory(Map<RevCommit, List<LineCategorizationType>> annotatedCommitMap) {
-        for (Map.Entry<RevCommit, List<LineCategorizationType>> entry : annotatedCommitMap.entrySet()) {
+    public static void printAnnotatedCommitHistory(Map<RevCommit, Set<LineCategorizationType>> annotatedCommitMap) {
+        for (Map.Entry<RevCommit, Set<LineCategorizationType>> entry : annotatedCommitMap.entrySet()) {
             RevCommit commit = entry.getKey();
-            List<LineCategorizationType> lineCategorizations = entry.getValue();
+            Set<LineCategorizationType> lineCategorizations = entry.getValue();
             String decision = "";
             if (lineCategorizations != null) {
                 decision = lineCategorizations.toString();

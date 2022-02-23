@@ -12,10 +12,7 @@ import org.eclipse.jgit.revwalk.RevCommit;
 import org.kohsuke.github.GHPullRequest;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class Driver {
     public static void main(String[] args) throws Exception {
@@ -23,7 +20,7 @@ public class Driver {
 //                 "streams/src/main/java/org/apache/kafka/streams/Topology.java");
 //         System.out.println(res);
 
-        Map<RevCommit, List<LineCategorizationType>> res = testReduceCommitDensity("../kafka",
+        Map<RevCommit, Set<LineCategorizationType>> res = testReduceCommitDensity("../kafka",
                  "streams/src/main/java/org/apache/kafka/streams/Topology.java");
          CommitHistoryUtil.printAnnotatedCommitHistory(res);
     }
@@ -35,14 +32,14 @@ public class Driver {
         jgit.generateFilesFromFileCommitHistory(commitMap);
     }
 
-    public static Map<RevCommit, List<LineCategorizationType>> testReduceCommitDensity(String repoPath, String filePath) throws Exception {
+    public static Map<RevCommit, Set<LineCategorizationType>> testReduceCommitDensity(String repoPath, String filePath) throws Exception {
         JGit jgit = new JGit(repoPath);
         Map<RevCommit, String> commitMap = jgit.getFileCommitHistory(filePath);
         BetterGitHistory betterGitHistory = new BetterGitHistory(jgit, commitMap);
         List<String> filterWords = new ArrayList<>();
         filterWords.add("MINOR");
         // filterWords.add("refactor");
-        Map<RevCommit, List<LineCategorizationType>> filteredCommits = betterGitHistory.getAnnotatedCommitHistory(filterWords);
+        Map<RevCommit, Set<LineCategorizationType>> filteredCommits = betterGitHistory.getAnnotatedCommitHistory(filterWords);
         return filteredCommits;
     }
 
