@@ -22,7 +22,7 @@ public class Driver {
 
         Map<RevCommit, Set<LineCategorizationType>> res = testReduceCommitDensity("../kafka",
                  "streams/src/main/java/org/apache/kafka/streams/Topology.java");
-         CommitHistoryUtil.printAnnotatedCommitHistory(res);
+        CommitHistoryUtil.printAnnotatedCommitHistory(res);
     }
 
     public static void testFileVersionGeneration(String gitPath, String fileName)
