@@ -213,6 +213,15 @@ public class BetterGitHistory {
         return filteredCommits;
     }
 
+    /**
+     * Takes the initialized commit history and reduces the density of the history by examining the diffs
+     * between each commit and tagging less useful commits.
+     * Uses regex patterns to detect diffs containing trivial changes and a list of
+     * given filter words for filtering commit messages.
+     * @param filterWords A list of words to use for filtering based on commit message content.
+     * @return A map of commits mapped to a set of tags for less useful commits. The set is null if the commit is
+     *          not tagged as less useful.
+     */
     public Map<RevCommit, Set<LineCategorizationType>> getAnnotatedCommitHistory(List<String> filterWords)
             throws IOException {
         Map<RevCommit, Set<LineCategorizationType>> annotatedCommits = this.filterByCodeDiff();
