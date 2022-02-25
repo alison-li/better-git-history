@@ -20,7 +20,7 @@ public class Driver {
 //                 "streams/src/main/java/org/apache/kafka/streams/Topology.java");
 //         System.out.println(res);
 
-        Map<RevCommit, Set<LineCategorizationType>> res = testReduceCommitDensity("../kafka",
+        Map<RevCommit, CommitDiffCategorization> res = testReduceCommitDensity("../kafka",
                  "streams/src/main/java/org/apache/kafka/streams/Topology.java");
         CommitHistoryUtil.printAnnotatedCommitHistory(res);
     }
@@ -32,14 +32,14 @@ public class Driver {
         jgit.generateFilesFromFileCommitHistory(commitMap);
     }
 
-    public static Map<RevCommit, Set<LineCategorizationType>> testReduceCommitDensity(String repoPath, String filePath) throws Exception {
+    public static Map<RevCommit, CommitDiffCategorization> testReduceCommitDensity(String repoPath, String filePath) throws Exception {
         JGit jgit = new JGit(repoPath);
         Map<RevCommit, String> commitMap = jgit.getFileCommitHistory(filePath);
         BetterGitHistory betterGitHistory = new BetterGitHistory(jgit, commitMap);
         List<String> filterWords = new ArrayList<>();
         filterWords.add("MINOR");
         // filterWords.add("refactor");
-        Map<RevCommit, Set<LineCategorizationType>> filteredCommits = betterGitHistory.getAnnotatedCommitHistory(filterWords);
+        Map<RevCommit, CommitDiffCategorization> filteredCommits = betterGitHistory.getAnnotatedCommitHistory(filterWords);
         return filteredCommits;
     }
 

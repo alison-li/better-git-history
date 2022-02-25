@@ -1,6 +1,6 @@
 package bettergithistory;
 
-public enum LineCategorizationType {
+public enum CommitDiffCategorizationType {
     DOCUMENTATION,
     ANNOTATION,
     IMPORT,
@@ -8,5 +8,5 @@ public enum LineCategorizationType {
     FILTER,
     OTHER;
 
-    private LineCategorizationType() {}
+    private CommitDiffCategorizationType() {}
 }
