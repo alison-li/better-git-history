@@ -4,6 +4,7 @@ import bettergithistory.clients.GitHubRepositoryClient;
 import bettergithistory.clients.JiraProjectClient;
 import bettergithistory.extractors.Diff;
 import bettergithistory.extractors.JGit;
+import bettergithistory.util.CommitHistoryUtil;
 import com.github.difflib.patch.AbstractDelta;
 import com.github.difflib.patch.DeltaType;
 import net.rcarz.jiraclient.Issue;
@@ -51,9 +52,7 @@ public class BetterGitHistory {
             Matcher matcher = pattern.matcher(message);
             if (matcher.find()) {
                 String pullRequestId = matcher.group(1);
-                int extractedId = Integer.parseInt(
-                        pullRequestId.substring(2, pullRequestId.length() - 1)
-                );
+                int extractedId = Integer.parseInt(pullRequestId.substring(2, pullRequestId.length() - 1));
                 commitToPullRequestMap.put(commit, gitHubRepoClient.getPullRequestById(extractedId));
             } else {
                 // A commit with no linked PR could still be useful
@@ -92,40 +91,35 @@ public class BetterGitHistory {
      * file by using regex to detect "trivial" code diffs between commits.
      * @return A list of the filtered commits.
      */
-    private Map<RevCommit, Set<LineCategorizationType>> filterByCodeDiff() throws IOException {
-        jgit.generateFilesFromFileCommitHistory(commitMap);
-        Map<RevCommit, Set<LineCategorizationType>> enrichedCommits = new LinkedHashMap<>();
+    private Map<RevCommit, CommitDiffCategorization> filterByCodeDiff() throws IOException {
+        jgit.generateFilesFromFileCommitHistory(this.commitMap);
+        Map<RevCommit, CommitDiffCategorization> categorizedCommits = new LinkedHashMap<>();
         // Each commit is associated with a list of deltas.
-        Map<RevCommit, List<AbstractDelta<String>>> commitDiffMap = Diff.getCommitDiffMap(commitMap);
+        Map<RevCommit, List<AbstractDelta<String>>> commitDiffMap = Diff.getCommitDiffMap(this.commitMap);
         for (Map.Entry<RevCommit, List<AbstractDelta<String>>> diffEntry : commitDiffMap.entrySet()) {
             RevCommit commit = diffEntry.getKey();
             List<AbstractDelta<String>> deltas = diffEntry.getValue();
-            boolean containsOtherChange = false;
             // Each delta has a "source" list of lines affected and a "target" list of lines affected.
             // The source is the original version's lines and the target is the new version's lines.
-            LinesCategorization linesCategorization = new LinesCategorization(null);
-            Set<LineCategorizationType> annotations = new LinkedHashSet<>();
+            CommitDiffCategorization commitDiffCategorization = new CommitDiffCategorization(commit);
             for (AbstractDelta<String> delta : deltas) {
                 DeltaType deltaType = delta.getType();
+                CommitDiffCategorization tempDiffCategorization = new CommitDiffCategorization(commit);
                 if (deltaType == DeltaType.CHANGE) {
                     List<String> sourceLines = delta.getSource().getLines();
                     List<String> targetLines = delta.getTarget().getLines();
-                    LinesCategorization sourceLinesCategorization = evaluateDeltaByLine(sourceLines);
-                    LinesCategorization targetLinesCategorization = evaluateDeltaByLine(targetLines);
-                    containsOtherChange = sourceLinesCategorization.getContainsOther()
-                            || targetLinesCategorization.getContainsOther();
-                    if (containsOtherChange) break;
-                    linesCategorization = new LinesCategorization(targetLines);
-                    linesCategorization.setContainsDoc(sourceLinesCategorization.getContainsDoc()
-                            || targetLinesCategorization.getContainsDoc());
-                    linesCategorization.setContainsAnnotation(sourceLinesCategorization.getContainsAnnotation()
-                            || targetLinesCategorization.getContainsAnnotation());
-                    linesCategorization.setContainsImport(sourceLinesCategorization.getContainsImport()
-                            || targetLinesCategorization.getContainsImport());
-                    linesCategorization.setContainsNewLine(sourceLinesCategorization.getContainsNewLine()
-                            || targetLinesCategorization.getContainsNewLine());
-                    linesCategorization.setContainsOther(sourceLinesCategorization.getContainsOther()
-                            || targetLinesCategorization.getContainsOther());
+                    CommitDiffCategorization sourceCommitDiffCategorization = evaluateDeltaByLine(sourceLines);
+                    CommitDiffCategorization targetCommitDiffCategorization = evaluateDeltaByLine(targetLines);
+                    tempDiffCategorization.setNumDoc(Math.max(sourceCommitDiffCategorization.getNumDoc(),
+                                            targetCommitDiffCategorization.getNumDoc()));
+                    tempDiffCategorization.setNumAnnotation(Math.max(sourceCommitDiffCategorization.getNumAnnotation(),
+                            targetCommitDiffCategorization.getNumAnnotation()));
+                    tempDiffCategorization.setNumImport(Math.max(sourceCommitDiffCategorization.getNumImport(),
+                            targetCommitDiffCategorization.getNumImport()));
+                    tempDiffCategorization.setNumNewLine(Math.max(sourceCommitDiffCategorization.getNumNewLine(),
+                            targetCommitDiffCategorization.getNumNewLine()));
+                    tempDiffCategorization.setNumOther(Math.max(sourceCommitDiffCategorization.getNumOther(),
+                            targetCommitDiffCategorization.getNumOther()));
                 } else if (deltaType == DeltaType.DELETE || deltaType == DeltaType.INSERT) {
                     List<String> lineList;
                     if (deltaType == DeltaType.DELETE) {
@@ -135,23 +129,13 @@ public class BetterGitHistory {
                         // The source lines list is empty. Check the target lines to see if what was inserted matters.
                         lineList = delta.getTarget().getLines();
                     }
-                    linesCategorization = evaluateDeltaByLine(lineList);
-                    containsOtherChange = linesCategorization.getContainsOther();
-                    if (containsOtherChange) break;
+                    tempDiffCategorization = evaluateDeltaByLine(lineList);
                 }
-                // Record trivial change types detected.
-                if (linesCategorization.getContainsDoc()) annotations.add(LineCategorizationType.DOCUMENTATION);
-                if (linesCategorization.getContainsAnnotation()) annotations.add(LineCategorizationType.ANNOTATION);
-                if (linesCategorization.getContainsImport()) annotations.add(LineCategorizationType.IMPORT);
-                if (linesCategorization.getContainsNewLine()) annotations.add(LineCategorizationType.NEWLINE);
+                commitDiffCategorization.mergeCommitDiffCategorization(tempDiffCategorization);
             }
-            if (containsOtherChange) {
-                enrichedCommits.put(commit, null);
-            } else {
-                enrichedCommits.put(commit, annotations);
-            }
+            categorizedCommits.put(commit, commitDiffCategorization);
         }
-        return enrichedCommits;
+        return categorizedCommits;
     }
 
     /**
@@ -159,31 +143,29 @@ public class BetterGitHistory {
      * @param lineList A list of lines associated with a delta.
      * @return An object representing the trivial changes found in the set of lines.
      */
-    private LinesCategorization evaluateDeltaByLine(List<String> lineList) {
-        boolean containsDoc = false, containsAnnotation = false, containsImport = false,
-                containsNewLine = false, containsOther = false;
+    private CommitDiffCategorization evaluateDeltaByLine(List<String> lineList) {
+        int numDoc = 0, numAnnotation = 0, numImport = 0, numNewLine = 0, numOther = 0;
         for (String line : lineList) {
             if (line.matches("(.*)\\*(.*)")
                     || line.matches("(.*)/\\*(.*)")
                     || line.matches("(.*)//(.*)")) {
-                containsDoc = true;
+                numDoc++;
             } else if (line.matches("(.*)import(.*)")) {
-                containsImport = true;
+                numImport++;
             } else if (line.matches("(.*)@[A-Za-z]+(.*)")) {
-                containsAnnotation = true;
+                numAnnotation++;
             } else if (line.equals("")) {
-                containsNewLine = true;
+                numNewLine++;
             } else {
-                containsOther = true;
-                break;
+                numOther++;
             }
         }
-        LinesCategorization deltaCategorization = new LinesCategorization(lineList);
-        deltaCategorization.setContainsDoc(containsDoc);
-        deltaCategorization.setContainsAnnotation(containsAnnotation);
-        deltaCategorization.setContainsImport(containsImport);
-        deltaCategorization.setContainsNewLine(containsNewLine);
-        deltaCategorization.setContainsOther(containsOther);
+        CommitDiffCategorization deltaCategorization = new CommitDiffCategorization(null);
+        deltaCategorization.setNumDoc(numDoc);
+        deltaCategorization.setNumAnnotation(numAnnotation);
+        deltaCategorization.setNumImport(numImport);
+        deltaCategorization.setNumNewLine(numNewLine);
+        deltaCategorization.setNumOther(numOther);
         return deltaCategorization;
     }
 
@@ -222,24 +204,17 @@ public class BetterGitHistory {
      * @return A map of commits mapped to a set of tags for less useful commits. The set is null if the commit is
      *          not tagged as less useful.
      */
-    public Map<RevCommit, Set<LineCategorizationType>> getAnnotatedCommitHistory(List<String> filterWords)
+    public Map<RevCommit, CommitDiffCategorization> getAnnotatedCommitHistory(List<String> filterWords)
             throws IOException {
-        Map<RevCommit, Set<LineCategorizationType>> annotatedCommits = this.filterByCodeDiff();
+        Map<RevCommit, CommitDiffCategorization> annotatedCommits = this.filterByCodeDiff();
         if (filterWords.isEmpty()) return annotatedCommits;
-        List<RevCommit> firstPassCommits = new ArrayList<>();
-        for (Map.Entry<RevCommit, Set<LineCategorizationType>> entry : annotatedCommits.entrySet()) {
-            RevCommit commit = entry.getKey();
-            Set<LineCategorizationType> lineCategories = entry.getValue();
-            if (lineCategories == null) {
-                firstPassCommits.add(commit);
-            }
-        }
-        List<RevCommit> secondPassCommits = this.filterByCommitMessage(firstPassCommits, filterWords);
+        List<RevCommit> commitsFilteredByMessage = this.filterByCommitMessage(
+                CommitHistoryUtil.getCommitsOnly(this.commitMap), filterWords
+        );
         for (RevCommit commit : annotatedCommits.keySet()) {
-            if (!secondPassCommits.contains(commit)) {
-                Set<LineCategorizationType> lineCategorizations = annotatedCommits.get(commit);
-                if (lineCategorizations == null) lineCategorizations = new HashSet<>();
-                lineCategorizations.add(LineCategorizationType.FILTER);
+            if (!commitsFilteredByMessage.contains(commit)) {
+                CommitDiffCategorization lineCategorizations = annotatedCommits.get(commit);
+                lineCategorizations.setNumFilter(1);
                 annotatedCommits.put(commit, lineCategorizations);
             }
         }

@@ -1,6 +1,7 @@
 package bettergithistory.util;
 
-import bettergithistory.LineCategorizationType;
+import bettergithistory.CommitDiffCategorization;
+import bettergithistory.CommitDiffCategorizationType;
 import net.rcarz.jiraclient.Issue;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
@@ -14,7 +15,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * Utility methods for working with the commit map (representing Git history) of a file.
@@ -38,15 +38,18 @@ public class CommitHistoryUtil {
      * of the commit being trivial.
      * @param annotatedCommitMap A commit map where each commit is mapped to annotations if it is judged to be trivial.
      */
-    public static void printAnnotatedCommitHistory(Map<RevCommit, Set<LineCategorizationType>> annotatedCommitMap) {
-        for (Map.Entry<RevCommit, Set<LineCategorizationType>> entry : annotatedCommitMap.entrySet()) {
+    public static void printAnnotatedCommitHistory(Map<RevCommit, CommitDiffCategorization> annotatedCommitMap) {
+        for (Map.Entry<RevCommit, CommitDiffCategorization> entry : annotatedCommitMap.entrySet()) {
             RevCommit commit = entry.getKey();
-            Set<LineCategorizationType> lineCategorizations = entry.getValue();
-            String decision = "";
-            if (lineCategorizations != null) {
-                decision = lineCategorizations.toString();
-            }
-            String formatted = String.format("%-100s %-10s", commit.getShortMessage(), decision);
+            CommitDiffCategorization diffCategorization = entry.getValue();
+            String docChanges = String.format("%s : %d", CommitDiffCategorizationType.DOCUMENTATION, diffCategorization.getNumDoc());
+            String annotationChanges = String.format("%s : %d", CommitDiffCategorizationType.ANNOTATION, diffCategorization.getNumAnnotation());
+            String importChanges = String.format("%s : %d", CommitDiffCategorizationType.IMPORT, diffCategorization.getNumImport());
+            String newLineChanges = String.format("%s : %d", CommitDiffCategorizationType.NEWLINE, diffCategorization.getNumNewLine());
+            String otherChanges = String.format("%s : %d", CommitDiffCategorizationType.OTHER, diffCategorization.getNumOther());
+            String messageFiltered = String.format("%s : %d", CommitDiffCategorizationType.FILTER, diffCategorization.getNumFilter());
+            String formatted = String.format("%-100s [%s, %s, %s, %s, %s, %s]", commit.getShortMessage(),
+                    docChanges, annotationChanges, importChanges, newLineChanges, otherChanges, messageFiltered);
             System.out.println(formatted);
         }
     }
