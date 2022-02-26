@@ -104,7 +104,10 @@ public class BetterGitHistory {
             for (Map.Entry<RevCommit, Issue> entry : commitsWithJira.entrySet()) {
                 RevCommit commit = entry.getKey();
                 Issue issue = entry.getValue();
-                AbstractIssueMetadata issueMetadata = this.getIssueMetadata(commit, issue);
+                AbstractIssueMetadata issueMetadata = null;
+                if (issue != null) {
+                    issueMetadata = this.getIssueMetadata(commit, issue);
+                }
                 commitsWithIssueMetadata.put(commit, issueMetadata);
             }
         } else if (client instanceof GHRepositoryClient) {
@@ -113,7 +116,10 @@ public class BetterGitHistory {
             for (Map.Entry<RevCommit, GHPullRequest> entry : commitsWithGitHub.entrySet()) {
                 RevCommit commit = entry.getKey();
                 GHPullRequest pullRequest = entry.getValue();
-                AbstractIssueMetadata issueMetadata = this.getIssueMetadata(commit, pullRequest);
+                AbstractIssueMetadata issueMetadata = null;
+                if (pullRequest != null) {
+                    issueMetadata = this.getIssueMetadata(commit, pullRequest);
+                }
                 commitsWithIssueMetadata.put(commit, issueMetadata);
             }
         } else {
@@ -131,27 +137,26 @@ public class BetterGitHistory {
     private AbstractIssueMetadata getIssueMetadata(RevCommit commit, Issue issue) {
         JiraIssueMetadata issueMetadata = new JiraIssueMetadata(commit);
         List<Comment> commentsExcludeBots = new ArrayList<>();
-        Set<String> emails = new HashSet<>();
-        emails.add(issue.getAssignee().getEmail());
-        String commitAuthorEmail = commit.getAuthorIdent().getEmailAddress();
+        Set<String> people = new HashSet<>();
+        people.add(issue.getAssignee().toString());
         int numCommitAuthorComments = 0;
         for (Comment comment : issue.getComments()) {
             String commentAuthorDisplayName = comment.getAuthor().getDisplayName();
             String commentAuthorName = comment.getAuthor().getName();
-            String commentAuthorEmail = comment.getAuthor().getEmail();
             String botRegex = "(.*)\\s?bot\\s?(.*)";
             if (!commentAuthorDisplayName.matches(botRegex) || !commentAuthorName.matches(botRegex)) {
                 commentsExcludeBots.add(comment);
-                emails.add(commentAuthorEmail);
+                people.add(commentAuthorName);
             }
-            if (commentAuthorEmail.equals(commitAuthorEmail)) {
+            // TODO: Tricky here. What if JIRA name and commit author name are slightly different?
+            if (commentAuthorDisplayName.equals(commentAuthorName)) {
                 numCommitAuthorComments++;
             }
         }
         issueMetadata.setNumComments(commentsExcludeBots.size());
         issueMetadata.setNumCommitAuthorComments(numCommitAuthorComments);
-        issueMetadata.setNumPeopleInvolved(emails.size());
-        // Specific to JIRA isssues:
+        issueMetadata.setNumPeopleInvolved(people.size());
+        // Specific to JIRA issues:
         issueMetadata.setPriority(issue.getPriority().toString());
         List<String> components = new ArrayList<>();
         for (Component component : issue.getComponents()) {
@@ -174,9 +179,9 @@ public class BetterGitHistory {
     private AbstractIssueMetadata getIssueMetadata(RevCommit commit, GHPullRequest pullRequest) throws IOException {
         GHPullRequestMetadata issueMetadata = new GHPullRequestMetadata(commit);
         List<GHIssueComment> commentsExcludeBots = new ArrayList<>();
-        Set<String> emails = new HashSet<>();
+        Set<String> people = new HashSet<>();
         String commitAuthorEmail = commit.getAuthorIdent().getEmailAddress();
-        emails.add(pullRequest.getUser().getEmail());
+        people.add(pullRequest.getUser().getEmail());
         int numCommitAuthorComments = 0;
         for (GHIssueComment comment : pullRequest.getComments()) {
             String commentAuthorName = comment.getUser().getName();
@@ -184,7 +189,7 @@ public class BetterGitHistory {
             String botRegex = "(.*)\\s?bot\\s?(.*)";
             if (!commentAuthorName.matches(botRegex)) {
                 commentsExcludeBots.add(comment);
-                emails.add(commentAuthorEmail);
+                people.add(commentAuthorEmail);
             }
             if (commentAuthorEmail.equals(commitAuthorEmail)) {
                 numCommitAuthorComments++;
@@ -192,7 +197,7 @@ public class BetterGitHistory {
         }
         issueMetadata.setNumComments(commentsExcludeBots.size());
         issueMetadata.setNumCommitAuthorComments(numCommitAuthorComments);
-        issueMetadata.setNumPeopleInvolved(emails.size());
+        issueMetadata.setNumPeopleInvolved(people.size());
         // Specific to GH pull requests:
         issueMetadata.setNumReviews(pullRequest.getReviewComments());
         return issueMetadata;
