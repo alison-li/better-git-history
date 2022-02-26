@@ -13,6 +13,7 @@ import net.rcarz.jiraclient.Component;
 import net.rcarz.jiraclient.Issue;
 import net.rcarz.jiraclient.JiraException;
 import org.eclipse.jgit.revwalk.RevCommit;
+import org.kohsuke.github.GHIssueComment;
 import org.kohsuke.github.GHPullRequest;
 
 import java.io.IOException;
@@ -130,8 +131,8 @@ public class BetterGitHistory {
     private AbstractIssueMetadata getIssueMetadata(RevCommit commit, Issue issue) {
         JiraIssueMetadata issueMetadata = new JiraIssueMetadata(commit);
         List<Comment> commentsExcludeBots = new ArrayList<>();
-        Set<String> usernames = new HashSet<>();
-        usernames.add(issue.getAssignee().getName());
+        Set<String> emails = new HashSet<>();
+        emails.add(issue.getAssignee().getEmail());
         String commitAuthorEmail = commit.getAuthorIdent().getEmailAddress();
         int numCommitAuthorComments = 0;
         for (Comment comment : issue.getComments()) {
@@ -141,7 +142,7 @@ public class BetterGitHistory {
             String botRegex = "(.*)\\s?bot\\s?(.*)";
             if (!commentAuthorDisplayName.matches(botRegex) || !commentAuthorName.matches(botRegex)) {
                 commentsExcludeBots.add(comment);
-                usernames.add(commentAuthorName);
+                emails.add(commentAuthorEmail);
             }
             if (commentAuthorEmail.equals(commitAuthorEmail)) {
                 numCommitAuthorComments++;
@@ -149,8 +150,8 @@ public class BetterGitHistory {
         }
         issueMetadata.setNumComments(commentsExcludeBots.size());
         issueMetadata.setNumCommitAuthorComments(numCommitAuthorComments);
-        issueMetadata.setNumPeopleInvolved(usernames.size());
-
+        issueMetadata.setNumPeopleInvolved(emails.size());
+        // Specific to JIRA isssues:
         issueMetadata.setPriority(issue.getPriority().toString());
         List<String> components = new ArrayList<>();
         for (Component component : issue.getComponents()) {
@@ -164,9 +165,36 @@ public class BetterGitHistory {
         return issueMetadata;
     }
 
-    private AbstractIssueMetadata getIssueMetadata(RevCommit commit, GHPullRequest pullRequest) {
+    /**
+     * Helper method for handling a GitHub pull request.
+     * @param commit The commit associated with a JIRA issue.
+     * @param pullRequest The GitHub pull request associated with a commit.
+     * @return The metadata object containing information about the GH pull request.
+     */
+    private AbstractIssueMetadata getIssueMetadata(RevCommit commit, GHPullRequest pullRequest) throws IOException {
         GHPullRequestMetadata issueMetadata = new GHPullRequestMetadata(commit);
-        // TODO
+        List<GHIssueComment> commentsExcludeBots = new ArrayList<>();
+        Set<String> emails = new HashSet<>();
+        String commitAuthorEmail = commit.getAuthorIdent().getEmailAddress();
+        emails.add(pullRequest.getUser().getEmail());
+        int numCommitAuthorComments = 0;
+        for (GHIssueComment comment : pullRequest.getComments()) {
+            String commentAuthorName = comment.getUser().getName();
+            String commentAuthorEmail = comment.getUser().getEmail();
+            String botRegex = "(.*)\\s?bot\\s?(.*)";
+            if (!commentAuthorName.matches(botRegex)) {
+                commentsExcludeBots.add(comment);
+                emails.add(commentAuthorEmail);
+            }
+            if (commentAuthorEmail.equals(commitAuthorEmail)) {
+                numCommitAuthorComments++;
+            }
+        }
+        issueMetadata.setNumComments(commentsExcludeBots.size());
+        issueMetadata.setNumCommitAuthorComments(numCommitAuthorComments);
+        issueMetadata.setNumPeopleInvolved(emails.size());
+        // Specific to GH pull requests:
+        issueMetadata.setNumReviews(pullRequest.getReviewComments());
         return issueMetadata;
     }
 
