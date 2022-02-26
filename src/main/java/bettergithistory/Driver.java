@@ -1,7 +1,9 @@
 package bettergithistory;
 
-import bettergithistory.clients.GitHubRepositoryClient;
+import bettergithistory.clients.GHRepositoryClient;
 import bettergithistory.clients.JiraProjectClient;
+import bettergithistory.core.BetterGitHistory;
+import bettergithistory.core.CommitDiffCategorization;
 import bettergithistory.extractors.Diff;
 import bettergithistory.extractors.JGit;
 import bettergithistory.util.CommitHistoryUtil;
@@ -64,7 +66,7 @@ public class Driver {
         Map<RevCommit, String> commitMap = jgit.getFileCommitHistory(fileName);
 
         // Initialize a client for interacting with a GitHub repository.
-        GitHubRepositoryClient gitHubRepoClient = new GitHubRepositoryClient("sindresorhus/caprine");
+        GHRepositoryClient gitHubRepoClient = new GHRepositoryClient("sindresorhus/caprine");
         Map<RevCommit, GHPullRequest> commitToPullRequestMap = new BetterGitHistory(jgit, commitMap)
                 .getCommitHistoryWithPullRequests(gitHubRepoClient, CommitHistoryUtil.getCommitsOnly(commitMap));
         CommitHistoryUtil.writeCommitHistoryWithPullRequestsToJSON(commitToPullRequestMap);
