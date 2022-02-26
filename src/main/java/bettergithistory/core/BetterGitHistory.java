@@ -166,6 +166,7 @@ public class BetterGitHistory {
         issueMetadata.setNumIssueLinks(issue.getIssueLinks().size());
         issueMetadata.setLabels(issue.getLabels());
         issueMetadata.setNumSubTasks(issue.getSubtasks().size());
+        issueMetadata.setNumVotes(issue.getVotes().getVotes());
         issueMetadata.setNumWatches(issue.getWatches().getWatchCount());
         return issueMetadata;
     }

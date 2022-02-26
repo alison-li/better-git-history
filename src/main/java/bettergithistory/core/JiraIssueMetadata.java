@@ -10,6 +10,7 @@ public class JiraIssueMetadata extends AbstractIssueMetadata {
     private List<String> labels;
     private int numIssueLinks;
     private int numSubTasks;
+    private int numVotes;
     private int numWatches;
 
     public JiraIssueMetadata(RevCommit commit) {
@@ -54,6 +55,14 @@ public class JiraIssueMetadata extends AbstractIssueMetadata {
 
     public void setNumSubTasks(int numSubTasks) {
         this.numSubTasks = numSubTasks;
+    }
+
+    public int getNumVotes() {
+        return this.numVotes;
+    }
+
+    public void setNumVotes(int numVotes) {
+        this.numVotes = numVotes;
     }
 
     public int getNumWatches() {
