@@ -1,7 +1,7 @@
 package bettergithistory.util;
 
-import bettergithistory.CommitDiffCategorization;
-import bettergithistory.CommitDiffCategorizationType;
+import bettergithistory.core.CommitDiffCategorization;
+import bettergithistory.core.CommitDiffCategorizationType;
 import net.rcarz.jiraclient.Issue;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;

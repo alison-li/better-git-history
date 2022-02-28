@@ -1,4 +1,4 @@
-package bettergithistory;
+package bettergithistory.core;
 
 import org.eclipse.jgit.revwalk.RevCommit;
 

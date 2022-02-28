@@ -10,11 +10,11 @@ import java.io.IOException;
  * We only care about interacting with pull requests in a given repository, so we use this class as a client for
  * extracting information from a repository.
  */
-public class GitHubRepositoryClient implements IssueTrackingClient {
+public class GHRepositoryClient implements IssueTrackingClient {
     private final GitHub github;
     private final GHRepository repo;
 
-    public GitHubRepositoryClient(String repo) throws IOException {
+    public GHRepositoryClient(String repo) throws IOException {
         Dotenv dotEnv = Dotenv.load();
         String authToken = dotEnv.get("GITHUB_AUTH_TOKEN");
         this.github = new GitHubBuilder()

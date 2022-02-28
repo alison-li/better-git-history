@@ -1,4 +1,4 @@
-package bettergithistory;
+package bettergithistory.core;
 
 public enum CommitDiffCategorizationType {
     DOCUMENTATION,
