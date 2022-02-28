@@ -7,9 +7,9 @@ import org.eclipse.jgit.revwalk.RevCommit;
  */
 public abstract class AbstractIssueMetadata {
     private final RevCommit commit;
-    private int numComments;
-    private int numCommitAuthorComments;
-    private int numPeopleInvolved; // total number of people involved by comments, excluding JIRA author
+    private int numComments; // excludes bot comments
+    private int numCommitAuthorComments; // proportion of comments that are by the commit author
+    private int numPeopleInvolved; // total number of people involved in issue, including commenters and assignee
 
     public AbstractIssueMetadata(RevCommit commit) {
         this.commit = commit;
