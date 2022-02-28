@@ -143,7 +143,7 @@ public class BetterGitHistory {
         for (Comment comment : issue.getComments()) {
             String commentAuthorDisplayName = comment.getAuthor().getDisplayName();
             String commentAuthorName = comment.getAuthor().getName();
-            String botRegex = "(.*)\\s?bot\\s?(.*)";
+            String botRegex = "(.*)((\\b([Bb]ot|BOT))|(([Bb]ot|BOT)\\b))(.*)";
             if (!commentAuthorDisplayName.matches(botRegex) || !commentAuthorName.matches(botRegex)) {
                 commentsExcludeBots.add(comment);
                 people.add(commentAuthorName);
@@ -187,7 +187,7 @@ public class BetterGitHistory {
         for (GHIssueComment comment : pullRequest.getComments()) {
             String commentAuthorName = comment.getUser().getName();
             String commentAuthorEmail = comment.getUser().getEmail();
-            String botRegex = "(.*)\\s?bot\\s?(.*)";
+            String botRegex = "(.*)((\\b([Bb]ot|BOT))|(([Bb]ot|BOT)\\b))(.*)";
             if (!commentAuthorName.matches(botRegex)) {
                 commentsExcludeBots.add(comment);
                 people.add(commentAuthorEmail);

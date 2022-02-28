@@ -25,13 +25,20 @@ public class Driver {
 //                 "streams/src/main/java/org/apache/kafka/streams/Topology.java");
 //         System.out.println(res);
 
-//        Map<RevCommit, CommitDiffCategorization> res = testReduceCommitDensity("../kafka",
+//        Map<RevCommit, CommitDiffCategorization> res = testAnnotatedCommitHistory("../kafka",
 //                 "streams/src/main/java/org/apache/kafka/streams/Topology.java");
 //        CommitHistoryUtil.printAnnotatedCommitHistory(res);
 
-        Map<RevCommit, AbstractIssueMetadata> res = testIssueMetadataJIRA("../kafka",
+        Map<RevCommit, AbstractIssueMetadata> metadata = testIssueMetadataJIRA("../kafka",
                 "streams/src/main/java/org/apache/kafka/streams/Topology.java");
+        Map<String, AbstractIssueMetadata> res = new LinkedHashMap<>();
+        for (Map.Entry<RevCommit, AbstractIssueMetadata> entry : metadata.entrySet()) {
+            res.put(entry.getKey().getShortMessage(), entry.getValue());
+        }
         System.out.println(res);
+
+//        Map<RevCommit, AbstractIssueMetadata> res = testIssueMetadataGH("../caprine", "source/browser/conversation-list.ts");
+//        System.out.println(res);
     }
 
     public static void testFileGeneration(String gitPath, String fileName)
@@ -49,7 +56,15 @@ public class Driver {
         return betterGitHistory.getCommitIssueMetadata(jiraProjectClient);
     }
 
-    public static Map<RevCommit, CommitDiffCategorization> testReduceCommitDensity(String repoPath, String filePath) throws Exception {
+    public static Map<RevCommit, AbstractIssueMetadata> testIssueMetadataGH(String repoPath, String filePath) throws IOException, JiraException {
+        JGit jgit = new JGit(repoPath);
+        Map<RevCommit, String> commitMap = jgit.getFileCommitHistory(filePath);
+        BetterGitHistory betterGitHistory = new BetterGitHistory(jgit, commitMap);
+        GHRepositoryClient ghRepositoryClient = new GHRepositoryClient("sindresorhus/caprine");
+        return betterGitHistory.getCommitIssueMetadata(ghRepositoryClient);
+    }
+
+    public static Map<RevCommit, CommitDiffCategorization> testAnnotatedCommitHistory(String repoPath, String filePath) throws Exception {
         JGit jgit = new JGit(repoPath);
         Map<RevCommit, String> commitMap = jgit.getFileCommitHistory(filePath);
         BetterGitHistory betterGitHistory = new BetterGitHistory(jgit, commitMap);
