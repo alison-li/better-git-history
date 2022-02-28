@@ -147,10 +147,10 @@ public class BetterGitHistory {
             if (!commentAuthorDisplayName.matches(botRegex) || !commentAuthorName.matches(botRegex)) {
                 commentsExcludeBots.add(comment);
                 people.add(commentAuthorName);
-            }
-            // TODO: Tricky here. What if JIRA name and commit author name are slightly different?
-            if (commentAuthorDisplayName.equals(commentAuthorName)) {
-                numCommitAuthorComments++;
+                String commitAuthorName = commit.getAuthorIdent().getName();
+                if (commentAuthorDisplayName.equals(commitAuthorName)) {
+                    numCommitAuthorComments++;
+                }
             }
         }
         issueMetadata.setNumComments(commentsExcludeBots.size());
@@ -191,9 +191,9 @@ public class BetterGitHistory {
             if (!commentAuthorName.matches(botRegex)) {
                 commentsExcludeBots.add(comment);
                 people.add(commentAuthorEmail);
-            }
-            if (commentAuthorEmail.equals(commitAuthorEmail)) {
-                numCommitAuthorComments++;
+                if (commentAuthorEmail.equals(commitAuthorEmail)) {
+                    numCommitAuthorComments++;
+                }
             }
         }
         issueMetadata.setNumComments(commentsExcludeBots.size());
