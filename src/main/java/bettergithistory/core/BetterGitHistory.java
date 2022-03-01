@@ -58,6 +58,10 @@ public class BetterGitHistory {
             Matcher matcher = pattern.matcher(message);
             if (matcher.find()) {
                 String issueId = matcher.group(1);
+                if (client instanceof GHRepositoryClient) {
+                    // Extract only the issue number for GH pull request retrieval
+                    issueId = issueId.substring(2, issueId.length() - 1);
+                }
                 commitToIssueMap.put(commit, client.getIssueById(issueId));
             } else {
                 commitToIssueMap.put(commit, null);
@@ -94,10 +98,10 @@ public class BetterGitHistory {
      */
     private AbstractIssueMetadata getIssueMetadata(RevCommit commit, AbstractIssue issue) throws IOException {
         AbstractIssueMetadata issueMetadata;
-        String botRegex = "(.*)((\\b([Bb]ot|BOT))|(([Bb]ot|BOT)\\b))(.*)";
+        String botNameRegex = "(.*)((\\b([Bb]ot|BOT))|(([Bb]ot|BOT)\\b))(.*)";
         if (issue instanceof JiraIssueWrapper) {
-            JiraIssueMetadata jiraIssueMetadata = new JiraIssueMetadata(commit);
             Issue jiraIssue = ((JiraIssueWrapper) issue).getIssue();
+            JiraIssueMetadata jiraIssueMetadata = new JiraIssueMetadata(commit);
             List<Comment> commentsExcludeBots = new ArrayList<>();
             Set<String> people = new HashSet<>();
             people.add(jiraIssue.getAssignee().toString());
@@ -105,7 +109,7 @@ public class BetterGitHistory {
             for (Comment comment : jiraIssue.getComments()) {
                 String commentAuthorDisplayName = comment.getAuthor().getDisplayName();
                 String commentAuthorName = comment.getAuthor().getName();
-                if (!commentAuthorDisplayName.matches(botRegex) || !commentAuthorName.matches(botRegex)) {
+                if (!commentAuthorDisplayName.matches(botNameRegex) || !commentAuthorName.matches(botNameRegex)) {
                     commentsExcludeBots.add(comment);
                     people.add(commentAuthorName);
                     String commitAuthorName = commit.getAuthorIdent().getName();
@@ -131,8 +135,8 @@ public class BetterGitHistory {
             jiraIssueMetadata.setNumWatches(jiraIssue.getWatches().getWatchCount());
             issueMetadata = jiraIssueMetadata;
         } else if (issue instanceof GHPullRequestWrapper) {
-            GHPullRequestMetadata ghPullRequestMetadata = new GHPullRequestMetadata(commit);
             GHPullRequest pullRequest = ((GHPullRequestWrapper) issue).getIssue();
+            GHPullRequestMetadata pullRequestMetadata = new GHPullRequestMetadata(commit);
             List<GHIssueComment> commentsExcludeBots = new ArrayList<>();
             Set<String> people = new HashSet<>();
             String commitAuthorEmail = commit.getAuthorIdent().getEmailAddress();
@@ -141,7 +145,7 @@ public class BetterGitHistory {
             for (GHIssueComment comment : pullRequest.getComments()) {
                 String commentAuthorName = comment.getUser().getName();
                 String commentAuthorEmail = comment.getUser().getEmail();
-                if (!commentAuthorName.matches(botRegex)) {
+                if (!commentAuthorName.matches(botNameRegex)) {
                     commentsExcludeBots.add(comment);
                     people.add(commentAuthorEmail);
                     if (commentAuthorEmail.equals(commitAuthorEmail)) {
@@ -149,12 +153,12 @@ public class BetterGitHistory {
                     }
                 }
             }
-            ghPullRequestMetadata.setNumComments(commentsExcludeBots.size());
-            ghPullRequestMetadata.setNumCommitAuthorComments(numCommitAuthorComments);
-            ghPullRequestMetadata.setNumPeopleInvolved(people.size());
+            pullRequestMetadata.setNumComments(commentsExcludeBots.size());
+            pullRequestMetadata.setNumCommitAuthorComments(numCommitAuthorComments);
+            pullRequestMetadata.setNumPeopleInvolved(people.size());
             // Specific to GH pull requests:
-            ghPullRequestMetadata.setNumReviews(pullRequest.getReviewComments());
-            issueMetadata = ghPullRequestMetadata;
+            pullRequestMetadata.setNumReviews(pullRequest.getReviewComments());
+            issueMetadata = pullRequestMetadata;
         } else {
             throw new IllegalArgumentException("Issue type not recognized. Please check if client and issue type are supported.");
         }

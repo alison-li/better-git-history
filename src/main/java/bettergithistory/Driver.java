@@ -28,13 +28,16 @@ public class Driver {
 
         Map<RevCommit, AbstractIssueMetadata> metadata = testIssueMetadataJIRA("../kafka",
                 "streams/src/main/java/org/apache/kafka/streams/Topology.java");
-        Map<String, AbstractIssueMetadata> res = new LinkedHashMap<>();
 
-//        Map<RevCommit, AbstractIssueMetadata> metadata = testIssueMetadataGH("../caprine", "source/browser/conversation-list.ts");
+//        Map<RevCommit, AbstractIssueMetadata> metadata = testIssueMetadataGH("../caprine",
+//                "source/browser/conversation-list.ts");
+
+        Map<String, AbstractIssueMetadata> res = new LinkedHashMap<>();
 
         for (Map.Entry<RevCommit, AbstractIssueMetadata> entry : metadata.entrySet()) {
             res.put(entry.getKey().getShortMessage(), entry.getValue());
         }
+
         System.out.println(res);
     }
 
