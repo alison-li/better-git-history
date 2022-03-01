@@ -27,7 +27,7 @@ public abstract class AbstractIssueMetadata {
         return this.numPeopleInvolved;
     }
 
-    private int getNumCommitAuthorComments() {
+    public int getNumCommitAuthorComments() {
         return this.numCommitAuthorComments;
     }
 

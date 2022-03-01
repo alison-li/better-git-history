@@ -7,6 +7,7 @@ import bettergithistory.core.BetterGitHistory;
 import bettergithistory.core.CommitDiffCategorization;
 import bettergithistory.extractors.Diff;
 import bettergithistory.extractors.JGit;
+import bettergithistory.util.CommitHistoryUtil;
 import com.github.difflib.patch.AbstractDelta;
 import org.eclipse.jgit.revwalk.RevCommit;
 
@@ -38,7 +39,7 @@ public class Driver {
             res.put(entry.getKey().getShortMessage(), entry.getValue());
         }
 
-        System.out.println(res);
+        CommitHistoryUtil.printCommitHistoryIssueMetadata(metadata);
     }
 
     public static void testFileGeneration(String gitPath, String fileName)

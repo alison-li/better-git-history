@@ -1,7 +1,6 @@
 package bettergithistory.util;
 
-import bettergithistory.core.CommitDiffCategorization;
-import bettergithistory.core.CommitDiffCategorizationType;
+import bettergithistory.core.*;
 import net.rcarz.jiraclient.Issue;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
@@ -51,6 +50,43 @@ public class CommitHistoryUtil {
             String formatted = String.format("%-100s [%s, %s, %s, %s, %s, %s]", commit.getShortMessage(),
                     docChanges, annotationChanges, importChanges, newLineChanges, otherChanges, messageFiltered);
             System.out.println(formatted);
+        }
+    }
+
+    /**
+     * Prints issue metadata information for each commit if an issue exists.
+     * @param commitIssueMetadataMap A commit map where each commit is mapped to issue metadata.
+     */
+    public static void printCommitHistoryIssueMetadata(Map<RevCommit, AbstractIssueMetadata> commitIssueMetadataMap) throws Exception {
+        for (Map.Entry<RevCommit, AbstractIssueMetadata> entry : commitIssueMetadataMap.entrySet()) {
+            RevCommit commit = entry.getKey();
+            AbstractIssueMetadata issueMetadata = entry.getValue();
+            if (issueMetadata == null) {
+                System.out.printf("%-100s%n", commit.getShortMessage());
+                continue;
+            }
+            String numComments = String.format("NUM_COMMENTS : %d", issueMetadata.getNumComments());
+            String numCommitAuthorComments = String.format("NUM_COMMIT_AUTHOR_COMMENTS : %d", issueMetadata.getNumCommitAuthorComments());
+            String proportionCommitAuthorComments = String.format("PROPORTION_COMMIT_AUTHOR : %f", (double) issueMetadata.getNumCommitAuthorComments() / issueMetadata.getNumCommitAuthorComments());
+            String numPeopleInvolved = String.format("NUM_PEOPLE_INVOLVED : %d", issueMetadata.getNumPeopleInvolved());
+            if (issueMetadata instanceof JiraIssueMetadata) {
+                String priority = String.format("PRIORITY : %s", ((JiraIssueMetadata) issueMetadata).getPriority());
+                String numIssueLinks = String.format("NUM_ISSUE_LINKS : %d", ((JiraIssueMetadata) issueMetadata).getNumIssueLinks());
+                String numSubTasks = String.format("NUM_SUBTASKS : %d", ((JiraIssueMetadata) issueMetadata).getNumSubTasks());
+                String numVotes = String.format("NUM_VOTES : %d", ((JiraIssueMetadata) issueMetadata).getNumVotes());
+                String numWatches = String.format("NUM_WATCHES : %d", ((JiraIssueMetadata) issueMetadata).getNumWatches());
+                String formatted = String.format("%-100s [%s, %s, %s, %s, %s, %s, %s, %s, %s]", commit.getShortMessage(),
+                        numComments, numCommitAuthorComments, proportionCommitAuthorComments, numPeopleInvolved, priority,
+                        numIssueLinks, numSubTasks, numVotes, numWatches);
+                System.out.println(formatted);
+            } else if (issueMetadata instanceof GHPullRequestMetadata) {
+                String numReviews = String.format("NUM_ISSUE_LINKS : %d", ((GHPullRequestMetadata) issueMetadata).getNumReviews());
+                String formatted = String.format("%-100s [%s, %s, %s, %s, %s]", commit.getShortMessage(),
+                        numComments, numCommitAuthorComments, proportionCommitAuthorComments, numPeopleInvolved, numReviews);
+                System.out.println(formatted);
+            } else {
+                throw new Exception("Issue type is not supported or recognized.");
+            }
         }
     }
 
