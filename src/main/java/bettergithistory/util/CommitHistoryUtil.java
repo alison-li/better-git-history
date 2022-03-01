@@ -67,7 +67,7 @@ public class CommitHistoryUtil {
             }
             String numComments = String.format("NUM_COMMENTS : %d", issueMetadata.getNumComments());
             String numCommitAuthorComments = String.format("NUM_COMMIT_AUTHOR_COMMENTS : %d", issueMetadata.getNumCommitAuthorComments());
-            String proportionCommitAuthorComments = String.format("PROPORTION_COMMIT_AUTHOR : %f", (double) issueMetadata.getNumCommitAuthorComments() / issueMetadata.getNumCommitAuthorComments());
+            String proportionCommitAuthorComments = String.format("PROPORTION_COMMIT_AUTHOR : %f", ((double) issueMetadata.getNumCommitAuthorComments()) / issueMetadata.getNumComments());
             String numPeopleInvolved = String.format("NUM_PEOPLE_INVOLVED : %d", issueMetadata.getNumPeopleInvolved());
             if (issueMetadata instanceof JiraIssueMetadata) {
                 String priority = String.format("PRIORITY : %s", ((JiraIssueMetadata) issueMetadata).getPriority());
