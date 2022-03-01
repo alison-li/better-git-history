@@ -1,5 +1,7 @@
 package bettergithistory.clients;
 
+import bettergithistory.core.AbstractIssue;
+import bettergithistory.core.GHPullRequestWrapper;
 import io.github.cdimascio.dotenv.Dotenv;
 import org.kohsuke.github.*;
 
@@ -36,9 +38,9 @@ public class GHRepositoryClient implements IssueTrackingClient {
      * Retrieve a specified pull request.
      * @param id The ID of the pull request.
      * @return The pull request.
-     * @throws IOException
      */
-    public GHPullRequest getPullRequestById(int id) throws IOException {
-        return this.repo.getPullRequest(id);
+    @Override
+    public AbstractIssue getIssueById(String id) throws IOException {
+        return new GHPullRequestWrapper(this.repo.getPullRequest(Integer.parseInt(id)));
     }
 }

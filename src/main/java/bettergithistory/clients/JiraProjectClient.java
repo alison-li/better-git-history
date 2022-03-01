@@ -1,8 +1,9 @@
 package bettergithistory.clients;
 
+import bettergithistory.core.AbstractIssue;
+import bettergithistory.core.JiraIssueWrapper;
 import io.github.cdimascio.dotenv.Dotenv;
 import net.rcarz.jiraclient.BasicCredentials;
-import net.rcarz.jiraclient.Issue;
 import net.rcarz.jiraclient.JiraClient;
 import net.rcarz.jiraclient.JiraException;
 
@@ -22,11 +23,12 @@ public class JiraProjectClient implements IssueTrackingClient {
 
     /**
      * Retrieve a specified Jira issue.
-     * @param key The Jira issue key.
+     * @param id The Jira issue key.
      * @return The Jira issue.
      * @throws JiraException If any error occurs as a response from Jira during attempt to retrieve.
      */
-    public Issue getIssueById(String key) throws JiraException {
-        return jira.getIssue(key);
+    @Override
+    public AbstractIssue getIssueById(String id) throws JiraException {
+        return new JiraIssueWrapper(jira.getIssue(id));
     }
 }

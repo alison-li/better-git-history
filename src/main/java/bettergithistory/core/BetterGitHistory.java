@@ -11,7 +11,6 @@ import com.github.difflib.patch.DeltaType;
 import net.rcarz.jiraclient.Comment;
 import net.rcarz.jiraclient.Component;
 import net.rcarz.jiraclient.Issue;
-import net.rcarz.jiraclient.JiraException;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.kohsuke.github.GHIssueComment;
 import org.kohsuke.github.GHPullRequest;
@@ -40,54 +39,31 @@ public class BetterGitHistory {
     }
 
     /**
-     * Retrieve a map linking commits to a corresponding pull request.
-     * Assumes if a commit message refers to a pull request ID, then the commit message will contain "(#<pull-request-id>)".
-     * @param ghRepositoryClient The client to use to interact with the GitHub repository.
-     * @param commits The list of commits to pull information for.
-     * @return A map of commits mapped to corresponding GitHub pull requests.
+     * Gets all of the issues from an issue tracking system that is associated with a commit.
+     * @param client Specifies the issue tracking system client to use, e.g. JIRA or GitHub.
+     * @return A map of commits mapped to an associated issue. Null if no issue is found linked to the commit.
      */
-    public Map<RevCommit, GHPullRequest> getCommitHistoryWithPullRequests(GHRepositoryClient ghRepositoryClient,
-                                                                          List<RevCommit> commits)
-            throws IOException {
-        Map<RevCommit, GHPullRequest> commitToPullRequestMap = new LinkedHashMap<>();
-        for (RevCommit commit : commits) {
+    public Map<RevCommit, AbstractIssue> getCommitIssues(IssueTrackingClient client) throws Exception {
+        Map<RevCommit, AbstractIssue> commitToIssueMap = new LinkedHashMap<>();
+        Pattern pattern;
+        if (client instanceof JiraProjectClient) {
+            pattern = Pattern.compile("([A-Z]+-\\d+)");
+        } else if (client instanceof GHRepositoryClient) {
+            pattern = Pattern.compile("(\\(#\\d+\\))");
+        } else {
+            throw new IllegalArgumentException("Client type not recognized. Please use a supported client.");
+        }
+        for (RevCommit commit : this.commitMap.keySet()) {
             String message = commit.getShortMessage();
-            Pattern pattern = Pattern.compile("(\\(#\\d+\\))");
             Matcher matcher = pattern.matcher(message);
             if (matcher.find()) {
-                String pullRequestId = matcher.group(1);
-                int extractedId = Integer.parseInt(pullRequestId.substring(2, pullRequestId.length() - 1));
-                commitToPullRequestMap.put(commit, ghRepositoryClient.getPullRequestById(extractedId));
+                String issueId = matcher.group(1);
+                commitToIssueMap.put(commit, client.getIssueById(issueId));
             } else {
-                // A commit with no linked PR could still be useful
-                commitToPullRequestMap.put(commit, null);
+                commitToIssueMap.put(commit, null);
             }
         }
-        return commitToPullRequestMap;
-    }
-
-    /**
-     * Retrieve a map linking commits to a corresponding Jira issue.
-     * @param jiraProjectClient The client to use to interact with the Jira instance.
-     * @param commits The list of commits to pull information for.
-     * @return A map of commits mapped to corresponding Jira issues.
-     */
-    public Map<RevCommit, Issue> getCommitHistoryWithJiraIssue(JiraProjectClient jiraProjectClient,
-                                                               List<RevCommit> commits)
-            throws JiraException {
-        Map<RevCommit, Issue> commitToJiraIssueMap = new LinkedHashMap<>();
-        for (RevCommit commit : commits) {
-            String message = commit.getShortMessage();
-            Pattern pattern = Pattern.compile("([A-Z]+-\\d+)");
-            Matcher matcher = pattern.matcher(message);
-            if (matcher.find()) {
-                String issueKey = matcher.group(1);
-                commitToJiraIssueMap.put(commit, jiraProjectClient.getIssueById(issueKey));
-            } else {
-                commitToJiraIssueMap.put(commit, null);
-            }
-        }
-        return commitToJiraIssueMap;
+        return commitToIssueMap;
     }
 
     /**
@@ -95,112 +71,93 @@ public class BetterGitHistory {
      * @param client The issue tracking system client to use.
      * @return A map of commits mapped to the metadata object containing information about the issue related to a commit.
      */
-    public Map<RevCommit, AbstractIssueMetadata> getCommitIssueMetadata(IssueTrackingClient client)
-            throws IllegalArgumentException, JiraException, IOException {
+    public Map<RevCommit, AbstractIssueMetadata> getCommitIssuesMetadata(IssueTrackingClient client) throws Exception {
         Map<RevCommit, AbstractIssueMetadata> commitsWithIssueMetadata = new LinkedHashMap<>();
-        if (client instanceof JiraProjectClient) {
-            Map<RevCommit, Issue> commitsWithJira = this.getCommitHistoryWithJiraIssue((JiraProjectClient) client,
-                    CommitHistoryUtil.getCommitsOnly(this.commitMap));
-            for (Map.Entry<RevCommit, Issue> entry : commitsWithJira.entrySet()) {
-                RevCommit commit = entry.getKey();
-                Issue issue = entry.getValue();
-                AbstractIssueMetadata issueMetadata = null;
-                if (issue != null) {
-                    issueMetadata = this.getIssueMetadata(commit, issue);
-                }
-                commitsWithIssueMetadata.put(commit, issueMetadata);
+        Map<RevCommit, AbstractIssue> commitsWithJira = this.getCommitIssues(client);
+        for (Map.Entry<RevCommit, AbstractIssue> entry : commitsWithJira.entrySet()) {
+            RevCommit commit = entry.getKey();
+            AbstractIssue issue = entry.getValue();
+            AbstractIssueMetadata issueMetadata = null;
+            if (issue != null) {
+                issueMetadata = this.getIssueMetadata(commit, issue);
             }
-        } else if (client instanceof GHRepositoryClient) {
-            Map<RevCommit, GHPullRequest> commitsWithGitHub = this.getCommitHistoryWithPullRequests((GHRepositoryClient) client,
-                    CommitHistoryUtil.getCommitsOnly(this.commitMap));
-            for (Map.Entry<RevCommit, GHPullRequest> entry : commitsWithGitHub.entrySet()) {
-                RevCommit commit = entry.getKey();
-                GHPullRequest pullRequest = entry.getValue();
-                AbstractIssueMetadata issueMetadata = null;
-                if (pullRequest != null) {
-                    issueMetadata = this.getIssueMetadata(commit, pullRequest);
-                }
-                commitsWithIssueMetadata.put(commit, issueMetadata);
-            }
-        } else {
-            throw new IllegalArgumentException("Client type not recognized. Please use a supported client.");
+            commitsWithIssueMetadata.put(commit, issueMetadata);
         }
         return commitsWithIssueMetadata;
     }
 
     /**
-     * Helper method for handling a JIRA issue.
-     * @param commit The commit associated with a JIRA issue.
-     * @param issue The JIRA issue associated with a commit.
-     * @return The metadata object containing information about the JIRA issue.
+     * Generates an issue metadata object when given a commit and an issue from an issue tracking system.
+     * @param commit The commit to generate issue metadata for.
+     * @param issue The issue associated with the commit.
+     * @return An issue metadata object holding information about a commit and the associated issue.
      */
-    private AbstractIssueMetadata getIssueMetadata(RevCommit commit, Issue issue) {
-        JiraIssueMetadata issueMetadata = new JiraIssueMetadata(commit);
-        List<Comment> commentsExcludeBots = new ArrayList<>();
-        Set<String> people = new HashSet<>();
-        people.add(issue.getAssignee().toString());
-        int numCommitAuthorComments = 0;
-        for (Comment comment : issue.getComments()) {
-            String commentAuthorDisplayName = comment.getAuthor().getDisplayName();
-            String commentAuthorName = comment.getAuthor().getName();
-            String botRegex = "(.*)((\\b([Bb]ot|BOT))|(([Bb]ot|BOT)\\b))(.*)";
-            if (!commentAuthorDisplayName.matches(botRegex) || !commentAuthorName.matches(botRegex)) {
-                commentsExcludeBots.add(comment);
-                people.add(commentAuthorName);
-                String commitAuthorName = commit.getAuthorIdent().getName();
-                if (commentAuthorDisplayName.equals(commitAuthorName)) {
-                    numCommitAuthorComments++;
+    private AbstractIssueMetadata getIssueMetadata(RevCommit commit, AbstractIssue issue) throws IOException {
+        AbstractIssueMetadata issueMetadata;
+        String botRegex = "(.*)((\\b([Bb]ot|BOT))|(([Bb]ot|BOT)\\b))(.*)";
+        if (issue instanceof JiraIssueWrapper) {
+            JiraIssueMetadata jiraIssueMetadata = new JiraIssueMetadata(commit);
+            Issue jiraIssue = ((JiraIssueWrapper) issue).getIssue();
+            List<Comment> commentsExcludeBots = new ArrayList<>();
+            Set<String> people = new HashSet<>();
+            people.add(jiraIssue.getAssignee().toString());
+            int numCommitAuthorComments = 0;
+            for (Comment comment : jiraIssue.getComments()) {
+                String commentAuthorDisplayName = comment.getAuthor().getDisplayName();
+                String commentAuthorName = comment.getAuthor().getName();
+                if (!commentAuthorDisplayName.matches(botRegex) || !commentAuthorName.matches(botRegex)) {
+                    commentsExcludeBots.add(comment);
+                    people.add(commentAuthorName);
+                    String commitAuthorName = commit.getAuthorIdent().getName();
+                    if (commentAuthorDisplayName.equals(commitAuthorName)) {
+                        numCommitAuthorComments++;
+                    }
                 }
             }
-        }
-        issueMetadata.setNumComments(commentsExcludeBots.size());
-        issueMetadata.setNumCommitAuthorComments(numCommitAuthorComments);
-        issueMetadata.setNumPeopleInvolved(people.size());
-        // Specific to JIRA issues:
-        issueMetadata.setPriority(issue.getPriority().toString());
-        List<String> components = new ArrayList<>();
-        for (Component component : issue.getComponents()) {
-            components.add(component.getName());
-        }
-        issueMetadata.setComponents(components);
-        issueMetadata.setNumIssueLinks(issue.getIssueLinks().size());
-        issueMetadata.setLabels(issue.getLabels());
-        issueMetadata.setNumSubTasks(issue.getSubtasks().size());
-        issueMetadata.setNumVotes(issue.getVotes().getVotes());
-        issueMetadata.setNumWatches(issue.getWatches().getWatchCount());
-        return issueMetadata;
-    }
-
-    /**
-     * Helper method for handling a GitHub pull request.
-     * @param commit The commit associated with a JIRA issue.
-     * @param pullRequest The GitHub pull request associated with a commit.
-     * @return The metadata object containing information about the GH pull request.
-     */
-    private AbstractIssueMetadata getIssueMetadata(RevCommit commit, GHPullRequest pullRequest) throws IOException {
-        GHPullRequestMetadata issueMetadata = new GHPullRequestMetadata(commit);
-        List<GHIssueComment> commentsExcludeBots = new ArrayList<>();
-        Set<String> people = new HashSet<>();
-        String commitAuthorEmail = commit.getAuthorIdent().getEmailAddress();
-        people.add(pullRequest.getUser().getEmail());
-        int numCommitAuthorComments = 0;
-        for (GHIssueComment comment : pullRequest.getComments()) {
-            String commentAuthorName = comment.getUser().getName();
-            String commentAuthorEmail = comment.getUser().getEmail();
-            String botRegex = "(.*)((\\b([Bb]ot|BOT))|(([Bb]ot|BOT)\\b))(.*)";
-            if (!commentAuthorName.matches(botRegex)) {
-                commentsExcludeBots.add(comment);
-                people.add(commentAuthorEmail);
-                if (commentAuthorEmail.equals(commitAuthorEmail)) {
-                    numCommitAuthorComments++;
+            jiraIssueMetadata.setNumComments(commentsExcludeBots.size());
+            jiraIssueMetadata.setNumCommitAuthorComments(numCommitAuthorComments);
+            jiraIssueMetadata.setNumPeopleInvolved(people.size());
+            // Specific to JIRA issues:
+            jiraIssueMetadata.setPriority(jiraIssue.getPriority().toString());
+            List<String> components = new ArrayList<>();
+            for (Component component : jiraIssue.getComponents()) {
+                components.add(component.getName());
+            }
+            jiraIssueMetadata.setComponents(components);
+            jiraIssueMetadata.setNumIssueLinks(jiraIssue.getIssueLinks().size());
+            jiraIssueMetadata.setLabels(jiraIssue.getLabels());
+            jiraIssueMetadata.setNumSubTasks(jiraIssue.getSubtasks().size());
+            jiraIssueMetadata.setNumVotes(jiraIssue.getVotes().getVotes());
+            jiraIssueMetadata.setNumWatches(jiraIssue.getWatches().getWatchCount());
+            issueMetadata = jiraIssueMetadata;
+        } else if (issue instanceof GHPullRequestWrapper) {
+            GHPullRequestMetadata ghPullRequestMetadata = new GHPullRequestMetadata(commit);
+            GHPullRequest pullRequest = ((GHPullRequestWrapper) issue).getIssue();
+            List<GHIssueComment> commentsExcludeBots = new ArrayList<>();
+            Set<String> people = new HashSet<>();
+            String commitAuthorEmail = commit.getAuthorIdent().getEmailAddress();
+            people.add(pullRequest.getUser().getEmail());
+            int numCommitAuthorComments = 0;
+            for (GHIssueComment comment : pullRequest.getComments()) {
+                String commentAuthorName = comment.getUser().getName();
+                String commentAuthorEmail = comment.getUser().getEmail();
+                if (!commentAuthorName.matches(botRegex)) {
+                    commentsExcludeBots.add(comment);
+                    people.add(commentAuthorEmail);
+                    if (commentAuthorEmail.equals(commitAuthorEmail)) {
+                        numCommitAuthorComments++;
+                    }
                 }
             }
+            ghPullRequestMetadata.setNumComments(commentsExcludeBots.size());
+            ghPullRequestMetadata.setNumCommitAuthorComments(numCommitAuthorComments);
+            ghPullRequestMetadata.setNumPeopleInvolved(people.size());
+            // Specific to GH pull requests:
+            ghPullRequestMetadata.setNumReviews(pullRequest.getReviewComments());
+            issueMetadata = ghPullRequestMetadata;
+        } else {
+            throw new IllegalArgumentException("Issue type not recognized. Please check if client and issue type are supported.");
         }
-        issueMetadata.setNumComments(commentsExcludeBots.size());
-        issueMetadata.setNumCommitAuthorComments(numCommitAuthorComments);
-        issueMetadata.setNumPeopleInvolved(people.size());
-        // Specific to GH pull requests:
-        issueMetadata.setNumReviews(pullRequest.getReviewComments());
         return issueMetadata;
     }
 
@@ -322,8 +279,7 @@ public class BetterGitHistory {
      * @return A map of commits mapped to a set of tags for less useful commits. The set is null if the commit is
      *          not tagged as less useful.
      */
-    public Map<RevCommit, CommitDiffCategorization> getAnnotatedCommitHistory(List<String> filterWords)
-            throws IOException {
+    public Map<RevCommit, CommitDiffCategorization> getAnnotatedCommitHistory(List<String> filterWords) throws IOException {
         Map<RevCommit, CommitDiffCategorization> annotatedCommits = this.filterByCodeDiff();
         if (filterWords.isEmpty()) return annotatedCommits;
         List<RevCommit> commitsFilteredByMessage = this.filterByCommitMessage(

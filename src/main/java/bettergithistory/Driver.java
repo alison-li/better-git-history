@@ -7,11 +7,8 @@ import bettergithistory.core.BetterGitHistory;
 import bettergithistory.core.CommitDiffCategorization;
 import bettergithistory.extractors.Diff;
 import bettergithistory.extractors.JGit;
-import bettergithistory.util.CommitHistoryUtil;
 import com.github.difflib.patch.AbstractDelta;
-import net.rcarz.jiraclient.JiraException;
 import org.eclipse.jgit.revwalk.RevCommit;
-import org.kohsuke.github.GHPullRequest;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -32,13 +29,13 @@ public class Driver {
         Map<RevCommit, AbstractIssueMetadata> metadata = testIssueMetadataJIRA("../kafka",
                 "streams/src/main/java/org/apache/kafka/streams/Topology.java");
         Map<String, AbstractIssueMetadata> res = new LinkedHashMap<>();
+
+//        Map<RevCommit, AbstractIssueMetadata> metadata = testIssueMetadataGH("../caprine", "source/browser/conversation-list.ts");
+
         for (Map.Entry<RevCommit, AbstractIssueMetadata> entry : metadata.entrySet()) {
             res.put(entry.getKey().getShortMessage(), entry.getValue());
         }
         System.out.println(res);
-
-//        Map<RevCommit, AbstractIssueMetadata> res = testIssueMetadataGH("../caprine", "source/browser/conversation-list.ts");
-//        System.out.println(res);
     }
 
     public static void testFileGeneration(String gitPath, String fileName)
@@ -48,20 +45,20 @@ public class Driver {
         jgit.generateFilesFromFileCommitHistory(commitMap);
     }
 
-    public static Map<RevCommit, AbstractIssueMetadata> testIssueMetadataJIRA(String repoPath, String filePath) throws JiraException, IOException {
+    public static Map<RevCommit, AbstractIssueMetadata> testIssueMetadataJIRA(String repoPath, String filePath) throws Exception {
         JGit jgit = new JGit(repoPath);
         Map<RevCommit, String> commitMap = jgit.getFileCommitHistory(filePath);
         BetterGitHistory betterGitHistory = new BetterGitHistory(jgit, commitMap);
         JiraProjectClient jiraProjectClient = new JiraProjectClient("https://issues.apache.org/jira/");
-        return betterGitHistory.getCommitIssueMetadata(jiraProjectClient);
+        return betterGitHistory.getCommitIssuesMetadata(jiraProjectClient);
     }
 
-    public static Map<RevCommit, AbstractIssueMetadata> testIssueMetadataGH(String repoPath, String filePath) throws IOException, JiraException {
+    public static Map<RevCommit, AbstractIssueMetadata> testIssueMetadataGH(String repoPath, String filePath) throws Exception {
         JGit jgit = new JGit(repoPath);
         Map<RevCommit, String> commitMap = jgit.getFileCommitHistory(filePath);
         BetterGitHistory betterGitHistory = new BetterGitHistory(jgit, commitMap);
         GHRepositoryClient ghRepositoryClient = new GHRepositoryClient("sindresorhus/caprine");
-        return betterGitHistory.getCommitIssueMetadata(ghRepositoryClient);
+        return betterGitHistory.getCommitIssuesMetadata(ghRepositoryClient);
     }
 
     public static Map<RevCommit, CommitDiffCategorization> testAnnotatedCommitHistory(String repoPath, String filePath) throws Exception {
@@ -84,15 +81,5 @@ public class Driver {
             readableDiffMap.put(entry.getKey().getShortMessage(), entry.getValue());
         }
         return readableDiffMap;
-    }
-
-    public static void testGitHub() throws IOException {
-        JGit jgit = new JGit("../caprine");
-        String fileName = "source/browser.ts";
-        Map<RevCommit, String> commitMap = jgit.getFileCommitHistory(fileName);
-        GHRepositoryClient gitHubRepoClient = new GHRepositoryClient("sindresorhus/caprine");
-        Map<RevCommit, GHPullRequest> commitToPullRequestMap = new BetterGitHistory(jgit, commitMap)
-                .getCommitHistoryWithPullRequests(gitHubRepoClient, CommitHistoryUtil.getCommitsOnly(commitMap));
-        CommitHistoryUtil.writeCommitHistoryWithPullRequestsToJSON(commitToPullRequestMap);
     }
 }
