@@ -33,12 +33,6 @@ public class Driver {
 //        Map<RevCommit, AbstractIssueMetadata> metadata = testIssueMetadataGH("../caprine",
 //                "source/browser/conversation-list.ts");
 
-        Map<String, AbstractIssueMetadata> res = new LinkedHashMap<>();
-
-        for (Map.Entry<RevCommit, AbstractIssueMetadata> entry : metadata.entrySet()) {
-            res.put(entry.getKey().getShortMessage(), entry.getValue());
-        }
-
         CommitHistoryUtil.printCommitHistoryIssueMetadata(metadata);
     }
 

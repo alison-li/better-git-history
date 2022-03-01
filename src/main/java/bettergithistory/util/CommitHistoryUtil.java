@@ -80,7 +80,7 @@ public class CommitHistoryUtil {
                         numIssueLinks, numSubTasks, numVotes, numWatches);
                 System.out.println(formatted);
             } else if (issueMetadata instanceof GHPullRequestMetadata) {
-                String numReviews = String.format("NUM_ISSUE_LINKS : %d", ((GHPullRequestMetadata) issueMetadata).getNumReviews());
+                String numReviews = String.format("NUM_REVIEWS : %d", ((GHPullRequestMetadata) issueMetadata).getNumReviews());
                 String formatted = String.format("%-100s [%s, %s, %s, %s, %s]", commit.getShortMessage(),
                         numComments, numCommitAuthorComments, proportionCommitAuthorComments, numPeopleInvolved, numReviews);
                 System.out.println(formatted);
