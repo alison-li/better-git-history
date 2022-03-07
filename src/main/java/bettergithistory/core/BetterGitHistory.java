@@ -285,17 +285,21 @@ public class BetterGitHistory {
      */
     public Map<RevCommit, CommitDiffCategorization> getAnnotatedCommitHistory(List<String> filterWords) throws IOException {
         Map<RevCommit, CommitDiffCategorization> annotatedCommits = this.filterByCodeDiff();
+        // Need to reverse the map to get most recent commit to oldest commit.
+        List<RevCommit> commits = new ArrayList<>(annotatedCommits.keySet());
+        Collections.reverse(commits);
         if (filterWords.isEmpty()) return annotatedCommits;
         List<RevCommit> commitsFilteredByMessage = this.filterByCommitMessage(
                 CommitHistoryUtil.getCommitsOnly(this.commitMap), filterWords
         );
-        for (RevCommit commit : annotatedCommits.keySet()) {
+        Map<RevCommit, CommitDiffCategorization> annotatedCommitsDesc = new LinkedHashMap<>();
+        for (RevCommit commit : commits) {
+            CommitDiffCategorization lineCategorizations = annotatedCommits.get(commit);
             if (!commitsFilteredByMessage.contains(commit)) {
-                CommitDiffCategorization lineCategorizations = annotatedCommits.get(commit);
                 lineCategorizations.setNumFilter(1);
-                annotatedCommits.put(commit, lineCategorizations);
             }
+            annotatedCommitsDesc.put(commit, lineCategorizations);
         }
-        return annotatedCommits;
+        return annotatedCommitsDesc;
     }
 }

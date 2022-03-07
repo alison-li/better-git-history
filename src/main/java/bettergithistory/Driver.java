@@ -23,16 +23,14 @@ public class Driver {
 //                 "streams/src/main/java/org/apache/kafka/streams/Topology.java");
 //         System.out.println(res);
 
-//        Map<RevCommit, CommitDiffCategorization> res = testAnnotatedCommitHistory("../kafka",
-//                 "streams/src/main/java/org/apache/kafka/streams/Topology.java");
-//        CommitHistoryUtil.printAnnotatedCommitHistory(res);
+        Map<RevCommit, CommitDiffCategorization> res = testAnnotatedCommitHistory("../kafka",
+                 "streams/src/main/java/org/apache/kafka/streams/Topology.java");
+        CommitHistoryUtil.printAnnotatedCommitHistory(res);
+
+        System.out.println();
 
         Map<RevCommit, AbstractIssueMetadata> metadata = testIssueMetadataJIRA("../kafka",
                 "streams/src/main/java/org/apache/kafka/streams/Topology.java");
-
-//        Map<RevCommit, AbstractIssueMetadata> metadata = testIssueMetadataGH("../caprine",
-//                "source/browser/conversation-list.ts");
-
         CommitHistoryUtil.printCommitHistoryIssueMetadata(metadata);
     }
 
