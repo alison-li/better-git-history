@@ -18,4 +18,3 @@ project's JIRA instance. You can try signing up for a JIRA account with an open-
 2. Run `mvn install` to install the dependencies.
 3. View the `Driver` class for some examples of how the methods are called.
    1. Create a directory called `temp` in `src/main/java/bettergithistory/`. This directory will hold all of the generated files from retrieving all versions of a file in the file's own commit history.
-   2. You can also create a directory called `json` in `src/main/java/bettergithistory/`. This directory will hold the generated JSON files from retrieving GitHub/Jira information.
